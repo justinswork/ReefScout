@@ -7,24 +7,26 @@ Legend: ☐ todo · ◐ in progress · ☑ done
 
 ---
 
-## Phase 0 — Project setup
-- ☐ `git init`, create public GitHub repo, add `debruinz` as collaborator if private.
-- ☐ `.gitignore` (`.env`, `__pycache__`, `venv/`, runtime artifacts).
-- ☐ `requirements.txt` (fastapi, uvicorn, anthropic, mcp, httpx, python-dotenv, pytest).
-- ☐ `.env.example` documenting `ANTHROPIC_API_KEY` (and any optional vars).
-- ☐ Confirm Python toolchain locally; create a virtual environment.
-- ☐ First commit: scaffold + planning docs.
+## Phase 0 — Project setup ☑
+- ☑ `git init`; public GitHub repo at github.com/justinswork/ReefScout (public → no collaborator needed).
+- ☑ `.gitignore` (`.env`, `__pycache__`, `venv/`, runtime artifacts).
+- ☑ `requirements.txt` (fastapi, uvicorn, anthropic, mcp, httpx, python-dotenv, pytest).
+- ☑ `.env.example` documenting `ANTHROPIC_API_KEY` (and any optional vars).
+- ☑ Confirm Python toolchain locally (git 2.48, Python 3.10.11). Target **Python 3.10** compatibility.
+- ☐ Create a virtual environment + install deps (start of Phase 1).
+- ☑ Initial commits: planning docs, then scaffold (two commits, pushed to `main`).
 
-## Phase 1 — Live data layer (`ocean_data.py`)
+## Phase 1 — Live data layer (`app/ocean_data.py`) ☑
 Plain async functions that hit each live API and return normalized Python dicts. No LLM here.
-- ☐ `geocode(place)` → Open-Meteo Geocoding.
-- ☐ `marine_conditions(lat, lon, date)` → Open-Meteo Marine (wave height, swell period, SST).
-- ☐ `tides(lat, lon, date)` → resolve nearest NOAA CO-OPS station, fetch hi/lo predictions.
-- ☐ `species_nearby(lat, lon, radius_km)` → iNaturalist marine observations.
-- ☐ `search_taxa(query)` → WoRMS/GBIF fuzzy match → candidate species.
-- ☐ `species_detail(taxon_id)` → WoRMS attributes + conservation status.
-- ☐ Robustness: timeouts, graceful errors, and normalized "no data" responses so the model
-  can reason about gaps instead of crashing. **Verify each endpoint with a real call.**
+- ☑ `geocode(place)` → Open-Meteo Geocoding.
+- ☑ `marine_conditions(lat, lon, date)` → Open-Meteo Marine (daily wave/swell maxima + avg SST).
+- ☑ `tides(lat, lon, date)` → nearest NOAA CO-OPS station (cached station list + haversine) → hi/lo.
+- ☑ `species_nearby(lat, lon, radius_km)` → iNaturalist species_counts (ranked by observations).
+- ☑ `search_taxa(query)` → WoRMS by scientific name (fuzzy) + vernacular fallback.
+      (GBIF dropped for v1 — WoRMS scientific+vernacular search covered the need cleanly.)
+- ☑ `species_detail(aphia_id)` → WoRMS record + environment flags + distribution + IUCN status.
+- ☑ Robustness: 15s timeouts, polite User-Agent, all upstream failures normalized to
+  `{"found": False, "error": ...}`. Verified with 8 live integration tests (`pytest -m live`, all green).
 
 ## Phase 2 — MCP server (`mcp_server.py`)
 - ☐ FastMCP server exposing the 6 tools, each wrapping a Phase-1 function.
