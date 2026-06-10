@@ -1,0 +1,20 @@
+# Web backend
+fastapi
+uvicorn[standard]
+
+# LLM + MCP
+anthropic
+mcp
+
+# HTTP client for the live ocean APIs
+httpx
+
+# Config / secrets
+python-dotenv
+
+# Testing / eval
+pytest
+pytest-asyncio
+
+# NOTE: versions intentionally unpinned for now; will pin (pip freeze) once the
+# data layer is verified against the live APIs in Phase 1, for reproducible deploys.
