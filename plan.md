@@ -53,10 +53,18 @@ Plain async functions that hit each live API and return normalized Python dicts.
 - ☐ System prompt v2: revised with documented rationale (rubric #2, #3).
 - ☐ Keep both versions + a written diff/why in `PROMPT_LOG.md`.
 
-## Phase 5 — Frontend (`static/index.html`)
-- ☐ Minimal chat UI: message input, conversation view, and a collapsible "what the agent did"
-  trace panel (shows tool calls → makes the agentic behavior visible to the grader).
-- ☐ Loading/awake state so a cold Render start is obviously "waking up," not "broken."
+## Phase 5 — Frontend (`static/index.html`) ☑ *(pulled ahead of Phases 3–4)*
+Scope upgraded from "minimal chat UI" to a polished ocean-themed **Liquid Glass** design:
+deep-ocean gradient, animated god rays + caustic shimmer + rising bubbles (with
+prefers-reduced-motion fallback), translucent blurred-glass surfaces with specular highlights.
+- ☑ Chat UI: hero with mode cards + suggestion chips, user/agent glass bubbles, safe
+  mini-markdown renderer, autosizing composer.
+- ☑ Collapsible "what the agent did" trace panel per agent message (tool icon, name, summary,
+  latency) — makes agentic behavior visible to the grader (#6, #7).
+- ☑ `app/main.py` FastAPI serves the UI + `/chat`; **demo-mode stub** returns the final response
+  contract ({reply, trace, demo:true}) with a visible "demo mode" badge until Phase 3 lands.
+- ☑ Cold-start handling: fetch failure renders a friendly "server waking up" message.
+- ☑ Verified in live browser preview: full send→reply flow, trace expansion, badge toggle.
 
 ## Phase 6 — Evaluation (`eval/`)
 - ☐ Define "good": for planning answers and for ID answers, with explicit pass criteria.
