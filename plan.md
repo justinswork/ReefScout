@@ -28,11 +28,14 @@ Plain async functions that hit each live API and return normalized Python dicts.
 - ☑ Robustness: 15s timeouts, polite User-Agent, all upstream failures normalized to
   `{"found": False, "error": ...}`. Verified with 8 live integration tests (`pytest -m live`, all green).
 
-## Phase 2 — MCP server (`mcp_server.py`)
-- ☐ FastMCP server exposing the 6 tools, each wrapping a Phase-1 function.
-- ☐ Each tool gets a precise **name, description, and input schema** (rubric #5). Descriptions
-  written for the model: when to use the tool, what it returns, units.
-- ☐ Manual check: run the server, list tools, call one by hand.
+## Phase 2 — MCP server (`app/mcp_server.py`) ☑
+- ☑ FastMCP server (`reefscout-ocean`) exposing the 6 tools, each wrapping a Phase-1 function.
+- ☑ Each tool has a precise **name, description, and input schema** (rubric #5). Descriptions
+  written for the model: when to use the tool, what it returns, units, caveats, and guidance
+  (e.g. search_marine_taxa explicitly says "reason to candidate names first, it does NOT
+  understand free-form descriptions" — tool descriptions are part of the prompt design).
+- ☑ Verified over real stdio JSON-RPC in `tests/test_mcp_server.py`: list_tools shows all 6
+  with schemas; call_tool("geocode_place") executes end-to-end. Both tests green.
 
 ## Phase 3 — Agent loop + backend (`agent.py`, `main.py`)
 - ☐ Read the `claude-api` reference before writing any Anthropic code (model IDs, tool-use loop).
