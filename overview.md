@@ -119,7 +119,12 @@ the identification flow.
   **"➕ Add to logbook"** button that pre-fills the species and inferred taxon group straight from
   the answer — the agent does the identification, the logbook captures it. Trips and manual
   sightings are added from the logbook view.
-- **v2 / not yet:** photos of the user's own catches (would use Firebase Storage).
+- **Photos:** every sighting carries a photo. By default it's a reference photo fetched from
+  iNaturalist (with attribution) for the resolved species; the user can upload their own, which
+  is downscaled client-side and stored as a compact JPEG **in the sighting's Firestore doc** —
+  one photo per doc stays well under the 1 MB limit, so no Firebase Storage (and no billing
+  upgrade) is needed. The reference-photo lookup skips obviously non-marine matches and, for
+  genus-only names, queries by the common name to avoid mismatches.
 
 ## Tech stack
 

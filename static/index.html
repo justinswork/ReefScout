@@ -340,7 +340,8 @@ header.glass {
   background: var(--glass-bg); border: 1px solid var(--glass-border);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
 }
-.lb-card .emoji { font-size: 1.4rem; flex: 0 0 auto; }
+.lb-card .emoji { font-size: 1.4rem; flex: 0 0 auto; width: 46px; text-align: center; }
+.lb-card .lb-thumb img { width: 46px; height: 46px; flex: 0 0 46px; border-radius: 10px; object-fit: cover; display: block; border: 1px solid rgba(255,255,255,0.16); }
 .lb-card .main { flex: 1 1 auto; min-width: 0; }
 .lb-card .name { font-size: 0.95rem; font-weight: 600; }
 .lb-card .name .sci { font-style: italic; font-weight: 400; color: var(--ink-dim); font-size: 0.85rem; }
@@ -376,6 +377,22 @@ header.glass {
 .field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(103,232,249,0.5); }
 .field textarea { resize: vertical; min-height: 56px; }
 .field-hint { font-size: 0.74rem; color: var(--ink-dim); margin: -6px 2px 14px; line-height: 1.4; }
+.sf-photo { margin-bottom: 14px; }
+.sf-photo-frame {
+  width: 100%; height: 150px; border-radius: 12px; overflow: hidden;
+  background: rgba(2,16,38,0.6); border: 1px solid rgba(255,255,255,0.14);
+  display: grid; place-items: center;
+}
+.sf-photo-frame img { width: 100%; height: 100%; object-fit: cover; }
+.sf-ph { color: var(--ink-faint); font-size: 0.8rem; }
+.sf-photo-btns { display: flex; gap: 8px; margin-top: 8px; }
+.sf-photo-btns button {
+  font-family: var(--font); font-size: 0.78rem; font-weight: 600; color: var(--ink); cursor: pointer;
+  padding: 7px 13px; border-radius: 999px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+}
+.sf-photo-btns button:hover { border-color: rgba(103,232,249,0.45); background: rgba(103,232,249,0.1); }
+.sf-photo-btns button[hidden] { display: none; }
+.sf-attrib { font-size: 0.68rem; color: var(--ink-faint); margin-top: 6px; }
 .field select option { background: #06294a; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
 .modal-actions button { font-family: var(--font); font-size: 0.85rem; font-weight: 650; cursor: pointer; padding: 9px 18px; border-radius: 999px; }
@@ -1282,12 +1299,36 @@ async function renderLogbook() {
   lbBody.innerHTML = html;
 }
 
+/* Downscale an uploaded image to a compact JPEG data URL — small enough to live
+   directly in the sighting's Firestore doc (one photo per doc, well under 1 MB). */
+function downscaleDataUrl(file, max = 1000, q = 0.8) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const url = c.toDataURL('image/jpeg', q);
+      URL.revokeObjectURL(img.src);
+      resolve(url);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('bad image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 function sightingCard(s, g) {
   g = g || groupInfo(s.group);
   const sci = s.scientificName ? ` <span class="sci">${escapeHtml(s.scientificName)}</span>` : '';
   const meta = [s.place, s.date].filter(Boolean).map(escapeHtml).join(' · ');
+  const photo = s.userPhoto || s.photoUrl || '';
+  const lead = photo
+    ? `<span class="lb-thumb"><img src="${escapeAttr(photo)}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>`
+    : `<span class="emoji">${g.emoji}</span>`;
   return `<div class="lb-card">
-    <span class="emoji">${g.emoji}</span>
+    ${lead}
     <div class="main"><div class="name">${escapeHtml(s.commonName || s.scientificName || 'Unknown')}${sci}</div>
       <div class="meta">${meta || '—'}${s.notes ? ' · ' + escapeHtml(s.notes) : ''}</div></div>
     ${s.iucn ? `<span class="iucn">${escapeHtml(s.iucn)}</span>` : ''}
@@ -1311,11 +1352,56 @@ function sightingForm(data = {}, id = null) {
   if (!authUser) return;
   showModal(`<h3>${id ? 'Edit sighting' : 'Log a sighting'}</h3>
     <div class="field"><label>Name</label><input id="f-common" value="${escapeAttr(data.commonName || data.scientificName || '')}" placeholder="e.g. Garibaldi"></div>
-    <div class="field-hint">We'll look up the scientific name, taxon group, and conservation status for you.</div>
+    <div class="field-hint">We'll look up the scientific name, taxon group, conservation status, and a reference photo for you.</div>
+    <div class="sf-photo">
+      <div class="sf-photo-frame" id="sf-frame"><span class="sf-ph">Type a name above for a reference photo, or add your own.</span></div>
+      <div class="sf-photo-btns">
+        <button type="button" id="sf-upload">📷 Add your photo</button>
+        <button type="button" id="sf-removephoto" hidden>Use web photo</button>
+      </div>
+      <input type="file" id="sf-file" accept="image/*" hidden>
+      <div class="sf-attrib" id="sf-attrib"></div>
+    </div>
     <div class="field"><label>Place</label><input id="f-place" value="${escapeAttr(data.place || '')}" placeholder="e.g. La Jolla Cove"></div>
     <div class="field"><label>Date</label><input id="f-date" type="date" value="${escapeAttr(data.date || todayISO())}"></div>
     <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Anything memorable?">${escapeHtml(data.notes || '')}</textarea></div>
     <div class="modal-actions"><button class="cancel" id="f-cancel" type="button">Cancel</button><button class="save" id="f-save" type="button">${id ? 'Save' : 'Add to logbook'}</button></div>`);
+
+  // --- photo + auto-enrichment state ---
+  let userPhoto = data.userPhoto || null;   // base64 data URL of the user's own photo
+  let resolved = null;                       // cached /species/resolve result
+  let resolvedFor = '';
+  const frame = document.getElementById('sf-frame');
+  const attribEl = document.getElementById('sf-attrib');
+  const removeBtn = document.getElementById('sf-removephoto');
+
+  const webPhoto = () => (resolved && resolved.photo_url) || data.photoUrl || '';
+  const webAttrib = () => (resolved && resolved.photo_attribution) || data.photoAttribution || '';
+  function paintPhoto() {
+    const p = userPhoto || webPhoto();
+    frame.innerHTML = p ? `<img src="${p}" alt="" referrerpolicy="no-referrer">` : '<span class="sf-ph">Type a name above for a reference photo, or add your own.</span>';
+    attribEl.textContent = (!userPhoto && webAttrib()) ? '📷 ' + webAttrib() : '';
+    removeBtn.hidden = !userPhoto;
+  }
+  async function doResolve(force) {
+    const q = data.scientificName || val('f-common');
+    if (!q || (!force && q === resolvedFor)) return;
+    resolvedFor = q;
+    try { const r = await fetch('/species/resolve?name=' + encodeURIComponent(q)).then(x => x.json()); resolved = (r && r.found) ? r : null; }
+    catch { resolved = null; }
+    paintPhoto();
+  }
+  paintPhoto();
+  if (val('f-common')) doResolve(true);    // prefilled or editing → fetch the reference photo now
+  document.getElementById('f-common').addEventListener('blur', () => doResolve(false));
+  document.getElementById('sf-upload').onclick = () => document.getElementById('sf-file').click();
+  document.getElementById('sf-file').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { userPhoto = await downscaleDataUrl(f); paintPhoto(); } catch { alert("Couldn't read that image."); }
+    e.target.value = '';
+  };
+  removeBtn.onclick = () => { userPhoto = null; paintPhoto(); };
+
   document.getElementById('f-cancel').onclick = closeModal;
   const saveBtn = document.getElementById('f-save');
   saveBtn.onclick = async () => {
@@ -1325,23 +1411,17 @@ function sightingForm(data = {}, id = null) {
     const origLabel = saveBtn.textContent;
     saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
 
-    // Auto-enrich the hidden fields. Reuse anything already parsed from an agent ID;
-    // otherwise resolve from the name via WoRMS (free, no API key). Best-effort.
-    let sci = data.scientificName || '', group = data.group || '', iucn = data.iucn || '';
-    if (!sci || !group || !iucn) {
-      try {
-        const q = data.scientificName || name;
-        const r = await fetch('/species/resolve?name=' + encodeURIComponent(q)).then(x => x.json());
-        if (r && r.found) {
-          sci = sci || r.scientific_name || '';
-          group = group || r.group || '';
-          iucn = iucn || r.iucn_status || '';
-        }
-      } catch (e) { /* enrichment is optional — save with what we have */ }
-    }
-    if (!group) group = guessGroup(name + ' ' + sci);   // keyword fallback
+    // Make sure we have enrichment (scientific name, group, IUCN, web photo) for this name.
+    if (!resolved || resolvedFor !== (data.scientificName || name)) { try { await doResolve(true); } catch {} }
+    const sci = data.scientificName || (resolved && resolved.scientific_name) || '';
+    const group = data.group || (resolved && resolved.group) || guessGroup(name + ' ' + sci);
+    const iucn = data.iucn || (resolved && resolved.iucn_status) || '';
 
-    const rec = { commonName: name, scientificName: sci, group, place, date, iucn: iucn || '', notes, source: data.source || 'manual' };
+    const rec = {
+      commonName: name, scientificName: sci, group, place, date, iucn: iucn || '', notes,
+      photoUrl: webPhoto() || '', photoAttribution: webAttrib() || '', userPhoto: userPhoto || '',
+      source: data.source || 'manual',
+    };
     try { id ? await window.ReefLog.updateSighting(id, rec) : await window.ReefLog.addSighting(rec); closeModal(); renderLogbook(); }
     catch (e) { saveBtn.disabled = false; saveBtn.textContent = origLabel; alert('Could not save: ' + e.message); }
   };

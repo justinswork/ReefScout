@@ -22,8 +22,14 @@ Legend: ☐ todo · ◐ in progress · ☑ done
 > New Firestore collections `users/{uid}/sightings` + `users/{uid}/trips` (rules updated — must be
 > re-published). Full-view UI with stats (species/sightings/trips/places + conservation-concern
 > count), add/edit/delete modals, and an **"➕ Add to logbook"** button on agent ID replies that
-> pre-fills the species (common + scientific name, taxon group inferred) from the reply. Photos of
-> the user's own catches deferred to v2 (needs Firebase Storage). Signed-out users don't see it.
+> pre-fills the species (common + scientific name, taxon group inferred) from the reply. Signed-out
+> users don't see it.
+>
+> **Added mid-build (user request):** sighting **photos** — every sighting has one. Reference photo
+> from iNaturalist by default (via `/species/resolve`, with attribution); the user can upload their
+> own, downscaled client-side and stored as a compact JPEG inside the sighting's Firestore doc (one
+> per doc, under 1 MB → no Firebase Storage / billing upgrade needed). Photo lookup skips non-marine
+> matches and uses the common name for genus-only results (fixed a moon-jelly→butterfly mismatch).
 
 ---
 

@@ -124,11 +124,25 @@ async def resolve_species(name: str) -> dict:
         if detail.get("found"):
             classification = detail.get("classification", classification)
             iucn = detail.get("iucn_status")
+
+    # A reference photo for the logbook to default to (user can override with their own).
+    # Prefer a binomial scientific name; for a genus-only WoRMS match (e.g. "moon jelly" -> the
+    # genus "Aurelia"), the bare genus is ambiguous on iNaturalist, so use the user's name.
+    sci_name = cand.get("scientific_name") or ""
+    photo_query = sci_name if " " in sci_name.strip() else (name or sci_name)
+    photo_url, photo_attribution = None, None
+    photos = await ocean_data.species_images(photo_query, limit=1)
+    if photos.get("found") and photos.get("images"):
+        photo_url = photos["images"][0].get("photo_url")
+        photo_attribution = photos["images"][0].get("attribution")
+
     return {
         "found": True,
         "scientific_name": cand.get("scientific_name"),
         "group": _derive_group(classification),
         "iucn_status": iucn,
+        "photo_url": photo_url,
+        "photo_attribution": photo_attribution,
     }
 
 

@@ -291,7 +291,12 @@ async def species_images(species: str, limit: int = 3) -> dict:
 
     results = data.get("results", []) if isinstance(data, dict) else []
     matches = []
+    # iNaturalist fuzzy-matches names, so a bare genus like "Aurelia" can surface insects
+    # or plants ahead of the marine taxon. Skip the obviously non-marine iconic groups.
+    skip_iconic = {"Insecta", "Arachnida", "Plantae", "Fungi", "Amphibia"}
     for r in results:
+        if r.get("iconic_taxon_name") in skip_iconic:
+            continue
         photo = r.get("default_photo") or {}
         url = photo.get("medium_url")
         if not url:
