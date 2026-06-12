@@ -221,6 +221,11 @@ header.glass {
   min-width: 230px; padding: 8px;
   border-radius: var(--radius-md);
   animation: surface .18s ease both;
+  /* Override the translucent .glass fill — a popover over the bright hero needs to be
+     near-opaque to stay readable. Keep the blur + a stronger shadow for depth. */
+  background: linear-gradient(155deg, rgba(12,46,80,0.97), rgba(3,21,46,0.98));
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 16px 40px rgba(1,10,28,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 .user-menu[hidden] { display: none; }
 .um-head { display: flex; align-items: center; gap: 10px; padding: 8px 8px 10px; }
