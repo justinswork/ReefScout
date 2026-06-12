@@ -57,6 +57,14 @@ async def test_species_nearby_returns_ranked_species():
     assert counts == sorted(counts, reverse=True)
 
 
+async def test_species_images_returns_photos_with_attribution():
+    r = await od.species_images("Hypsypops rubicundus")
+    assert r["found"] is True
+    img = r["images"][0]
+    assert img["photo_url"].startswith("https://")
+    assert img["attribution"]  # we must be able to credit the photographer
+
+
 async def test_search_taxa_scientific_name():
     r = await od.search_taxa("Amphiprion ocellaris", fuzzy=False)
     assert r["found"] is True

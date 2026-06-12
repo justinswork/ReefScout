@@ -55,9 +55,16 @@ class ChatTurn(BaseModel):
     content: str
 
 
+class ChatImage(BaseModel):
+    media_type: str = Field(pattern="^image/(jpeg|png|webp|gif)$")
+    # ~3 MB base64 ceiling per image; the UI downscales client-side before upload.
+    data: str = Field(min_length=1, max_length=4_200_000)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     history: list[ChatTurn] = []
+    images: list[ChatImage] = Field(default=[], max_length=3)
 
 
 @app.get("/health")
@@ -72,8 +79,9 @@ async def chat(req: ChatRequest) -> dict:
 
     # Cap history so a long session can't grow unbounded on the personal API key.
     history = [t.model_dump() for t in req.history[-12:]]
+    images = [i.model_dump() for i in req.images] or None
     try:
-        result = await agent.run(req.message, history)
+        result = await agent.run(req.message, history, images)
     except Exception as exc:  # noqa: BLE001 - degrade to a readable chat error
         return {
             "reply": ("**Something went wrong on my end.** The live data sources and the "

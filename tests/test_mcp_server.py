@@ -18,6 +18,7 @@ EXPECTED_TOOLS = {
     "get_marine_conditions",
     "get_tides",
     "get_species_nearby",
+    "get_species_images",
     "search_marine_taxa",
     "get_species_detail",
 }
@@ -25,7 +26,7 @@ EXPECTED_TOOLS = {
 SERVER_PARAMS = StdioServerParameters(command=sys.executable, args=["-m", "app.mcp_server"])
 
 
-async def test_server_exposes_six_tools_with_schemas():
+async def test_server_exposes_all_tools_with_schemas():
     async with stdio_client(SERVER_PARAMS) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()

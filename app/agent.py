@@ -117,12 +117,38 @@ class ReefScoutAgent:
 
     # -- the agentic loop ---------------------------------------------------------
 
-    async def run(self, message: str, history: list[dict] | None = None) -> dict:
-        """Run one user message through the agent. Returns {reply, trace, usage}."""
+    async def run(
+        self,
+        message: str,
+        history: list[dict] | None = None,
+        images: list[dict] | None = None,
+    ) -> dict:
+        """Run one user message through the agent. Returns {reply, trace, usage}.
+
+        images: optional [{"media_type": "image/jpeg", "data": "<base64>"}, ...] —
+        user-taken photos for visual identification, sent as vision blocks ahead of
+        the text so the model sees the photo in the context of the question.
+        """
         if self._mcp is None:
             raise RuntimeError("Agent not started")
 
-        messages: list[dict] = list(history or []) + [{"role": "user", "content": message}]
+        if images:
+            content: list[dict] = [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": img["media_type"],
+                        "data": img["data"],
+                    },
+                }
+                for img in images[:3]  # cap: photos are token-expensive
+            ]
+            content.append({"type": "text", "text": message})
+        else:
+            content = message  # type: ignore[assignment]
+
+        messages: list[dict] = list(history or []) + [{"role": "user", "content": content}]
         trace: list[dict] = []
         usage = {"input_tokens": 0, "output_tokens": 0, "cache_read_input_tokens": 0}
 

@@ -130,6 +130,24 @@ async def get_species_nearby(
 
 
 @mcp.tool()
+async def get_species_images(species: str, limit: int = 3) -> dict:
+    """Get reference photographs of a species (or close name matches) from iNaturalist,
+    with photographer attribution.
+
+    Use this whenever showing the user what a candidate species looks like would help —
+    especially during identification ("did it look like this?") and when highlighting
+    notable species in trip planning. Embed returned photos in your reply as markdown
+    images: ![Common name](photo_url) followed by the attribution in italics. ALWAYS
+    include the attribution line for every photo you display.
+
+    Args:
+        species: Scientific name (best) or common name of the species.
+        limit: Max photos to return (default 3, one per matching taxon).
+    """
+    return await ocean_data.species_images(species, limit)
+
+
+@mcp.tool()
 async def search_marine_taxa(query: str, fuzzy: bool = True, limit: int = 8) -> dict:
     """Search the World Register of Marine Species (WoRMS) for taxa matching a
     scientific OR common name. Returns candidate species with full classification,

@@ -284,6 +284,18 @@ main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radiu
   font-family: var(--mono); font-size: 0.82em;
   background: rgba(255,255,255,0.1); border-radius: 6px; padding: 1px 6px;
 }
+.card img.ref {
+  display: block; max-width: min(100%, 320px); max-height: 240px;
+  border-radius: 14px; margin: 8px 0 2px;
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 4px 16px rgba(1,10,28,0.4);
+}
+.card .attrib { display: block; font-size: 0.7rem; color: var(--ink-faint); margin: 2px 0 8px; }
+.card img.user-photo {
+  display: inline-block; width: 84px; height: 84px; object-fit: cover;
+  border-radius: 12px; margin: 0 6px 6px 0;
+  border: 1px solid rgba(255,255,255,0.25);
+}
 
 /* Tool trace ("what the agent did") */
 .trace { margin-top: 11px; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 9px; }
@@ -329,10 +341,36 @@ main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radiu
 /* Composer */
 .composer {
   flex: 0 0 auto;
-  display: flex; align-items: flex-end; gap: 10px;
-  padding: 10px 10px 10px 20px;
+  display: flex; flex-direction: column;
+  padding: 10px 10px 10px 16px;
   border-radius: 28px;
 }
+.composer-row { display: flex; align-items: flex-end; gap: 8px; width: 100%; }
+.attach-previews { display: none; gap: 8px; padding: 2px 4px 8px; flex-wrap: wrap; }
+.attach-previews.has { display: flex; }
+.preview-chip { position: relative; }
+.preview-chip img {
+  width: 56px; height: 56px; object-fit: cover; border-radius: 12px;
+  border: 1px solid rgba(103,232,249,0.4);
+}
+.preview-chip button {
+  position: absolute; top: -6px; right: -6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: none; cursor: pointer;
+  background: rgba(2,16,38,0.9); color: var(--ink);
+  font-size: 0.7rem; line-height: 1;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+.attach {
+  flex: 0 0 auto;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+  cursor: pointer; display: grid; place-items: center;
+  font-size: 1.05rem;
+  transition: all .2s ease;
+}
+.attach:hover { border-color: rgba(103,232,249,0.5); background: rgba(103,232,249,0.1); }
 .composer textarea {
   flex: 1 1 auto;
   background: transparent; border: none; outline: none; resize: none;
@@ -423,13 +461,18 @@ main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radiu
   </main>
 
   <form class="composer glass" id="composer">
-    <textarea id="input" rows="1" placeholder="Ask about a spot, a day, or a creature you saw…"
-      autocomplete="off" autofocus></textarea>
-    <button class="send" id="send" type="submit" aria-label="Send" disabled>
-      <svg viewBox="0 0 24 24" fill="none" stroke="#04293f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 12h13M13 6l6 6-6 6"/>
-      </svg>
-    </button>
+    <div class="attach-previews" id="previews"></div>
+    <div class="composer-row">
+      <button class="attach" id="attach" type="button" aria-label="Attach a photo" title="Attach a photo of what you saw">📷</button>
+      <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      <textarea id="input" rows="1" placeholder="Ask about a spot, a day, or a creature you saw…"
+        autocomplete="off" autofocus></textarea>
+      <button class="send" id="send" type="submit" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#04293f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h13M13 6l6 6-6 6"/>
+        </svg>
+      </button>
+    </div>
   </form>
 
   <div class="foot">
@@ -472,6 +515,7 @@ const TOOL_ICONS = {
   get_marine_conditions: '🌊',
   get_tides: '🌗',
   get_species_nearby: '🐠',
+  get_species_images: '📷',
   search_marine_taxa: '🔎',
   get_species_detail: '📖',
 };
@@ -480,9 +524,17 @@ const TOOL_ICONS = {
 function md(text) {
   let h = text
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+  // ![alt](https://...) -> reference image. https-only, no quotes/spaces in URL.
+  h = h.replace(/!\[([^\]\n]*)\]\((https:\/\/[^\s"'()<>]+)\)/g,
+    '<img class="ref" src="$2" alt="$1" loading="lazy">');
+  // A whole-line italic photo credit (starts with © or (c)) -> small dim caption.
+  // Must run before generic italic so the credit line keeps its dedicated style.
+  h = h.replace(/^\s*\*\s*((?:©|\(c\))[^\n*]+?)\s*\*\s*$/gim, '<span class="attrib">$1</span>');
   h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
-  h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  h = h.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+  // Bold is non-greedy so an inner single-* italic (e.g. **Garibaldi (*Hypsypops*)**)
+  // doesn't truncate the match; italic runs afterward on what's left.
+  h = h.replace(/\*\*([^\n]+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
   h = h.replace(/^#{2,4}\s*(.+)$/gm, '<h4>$1</h4>');
   // group consecutive "- " lines into <ul>
   h = h.replace(/(^|\n)((?:- .*(?:\n|$))+)/g, (m, pre, block) => {
@@ -535,15 +587,72 @@ function showTyping() {
   return el;
 }
 
+/* ============================ photo attachments ============================ */
+const attachBtn = document.getElementById('attach');
+const fileInput = document.getElementById('fileInput');
+const previews = document.getElementById('previews');
+let attachments = [];   // [{media_type, data}] base64, downscaled
+
+attachBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', async () => {
+  for (const file of fileInput.files) {
+    if (attachments.length >= 3) break;
+    try { attachments.push(await downscale(file)); } catch { /* skip unreadable file */ }
+  }
+  fileInput.value = '';
+  renderPreviews();
+});
+
+/* Downscale client-side (max 1280px, JPEG) — keeps uploads fast and vision tokens cheap. */
+function downscale(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1280;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      URL.revokeObjectURL(img.src);
+      resolve({ media_type: 'image/jpeg', data: dataUrl.split(',')[1] });
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('bad image')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function renderPreviews() {
+  previews.classList.toggle('has', attachments.length > 0);
+  previews.innerHTML = attachments.map((a, i) => `
+    <span class="preview-chip">
+      <img src="data:${a.media_type};base64,${a.data}" alt="attached photo">
+      <button type="button" data-i="${i}" aria-label="Remove photo">✕</button>
+    </span>`).join('');
+  send.disabled = pending || (!input.value.trim() && !attachments.length);
+}
+previews.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-i]');
+  if (btn) { attachments.splice(+btn.dataset.i, 1); renderPreviews(); }
+});
+
 /* ============================ send flow ============================ */
 async function sendMessage(text) {
-  if (pending || !text.trim()) return;
+  if (pending || (!text.trim() && !attachments.length)) return;
+  if (!text.trim()) text = 'What is this? Can you identify it?';
   pending = true;
   send.disabled = true;
   input.value = '';
   autosize();
 
-  addMessage('user', md(text));
+  const sentImages = attachments;
+  attachments = [];
+  renderPreviews();
+
+  const thumbs = sentImages.map(a =>
+    `<img class="user-photo" src="data:${a.media_type};base64,${a.data}" alt="my photo">`).join('');
+  addMessage('user', thumbs + md(text));
   history.push({ role: 'user', content: text });
   const typing = showTyping();
 
@@ -551,7 +660,7 @@ async function sendMessage(text) {
     const res = await fetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, history: history.slice(0, -1) }),
+      body: JSON.stringify({ message: text, history: history.slice(0, -1), images: sentImages }),
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
@@ -568,7 +677,7 @@ async function sendMessage(text) {
     ));
   } finally {
     pending = false;
-    send.disabled = !input.value.trim();
+    send.disabled = !input.value.trim() && !attachments.length;
     input.focus();
   }
 }
@@ -577,7 +686,7 @@ composer.addEventListener('submit', e => { e.preventDefault(); sendMessage(input
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input.value); }
 });
-input.addEventListener('input', () => { send.disabled = !input.value.trim() || pending; autosize(); });
+input.addEventListener('input', () => { send.disabled = (!input.value.trim() && !attachments.length) || pending; autosize(); });
 function autosize() {
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 120) + 'px';

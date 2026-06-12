@@ -33,6 +33,7 @@ MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 NOAA_DATA_URL = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 NOAA_STATIONS_URL = "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json"
 INAT_SPECIES_COUNTS_URL = "https://api.inaturalist.org/v1/observations/species_counts"
+INAT_TAXA_URL = "https://api.inaturalist.org/v1/taxa"
 WORMS_BASE = "https://www.marinespecies.org/rest"
 
 # Polite identification + sane timeout so a slow upstream can't hang the agent.
@@ -273,6 +274,46 @@ async def species_nearby(
         "distinct_species_in_area": data.get("total_results") if isinstance(data, dict) else None,
         "species": species,
         "note": "Ranked by number of research-grade iNaturalist observations. May include occasional non-marine taxa near shore.",
+        "source": "iNaturalist",
+    }
+
+
+# --- 4b. Species reference images -------------------------------------------------------
+async def species_images(species: str, limit: int = 3) -> dict:
+    """Curated reference photos for a species (or close matches) from iNaturalist's
+    taxon database. Returns photo URLs plus attribution — attribution must be shown
+    when a photo is displayed."""
+    params = {"q": species, "per_page": max(limit, 3), "locale": "en"}
+    try:
+        data = await _get_json(INAT_TAXA_URL, params)
+    except Exception as exc:  # noqa: BLE001
+        return {"found": False, "query": species, "error": f"iNaturalist taxa request failed: {exc}"}
+
+    results = data.get("results", []) if isinstance(data, dict) else []
+    matches = []
+    for r in results:
+        photo = r.get("default_photo") or {}
+        url = photo.get("medium_url")
+        if not url:
+            continue  # only return taxa that actually have a usable photo
+        matches.append(
+            {
+                "scientific_name": r.get("name"),
+                "common_name": r.get("preferred_common_name"),
+                "rank": r.get("rank"),
+                "photo_url": url,
+                "attribution": photo.get("attribution"),
+                "inat_taxon_id": r.get("id"),
+            }
+        )
+        if len(matches) >= limit:
+            break
+    return {
+        "found": bool(matches),
+        "query": species,
+        "images": matches,
+        "error": None if matches else f"No photos found for '{species}'.",
+        "note": "Show the attribution line alongside any displayed photo.",
         "source": "iNaturalist",
     }
 

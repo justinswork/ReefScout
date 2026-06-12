@@ -5,6 +5,11 @@ progress is visible in the git history (rubric #8) and we can course-correct ear
 
 Legend: ☐ todo · ◐ in progress · ☑ done
 
+> **Added mid-build (user request):** image identification — users upload photos (vision
+> input) and the agent returns reference photos of candidate species to compare against.
+> Shipped as a 7th MCP tool (`get_species_images`), multimodal `/chat`, UI photo upload, and
+> system prompt V3. Folded into Phases 1–6 below rather than a new phase.
+
 ---
 
 ## Phase 0 — Project setup ☑

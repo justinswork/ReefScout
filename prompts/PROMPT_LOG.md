@@ -71,3 +71,31 @@ claimed clownfish sighting in California and counter-proposing the garibaldi. Gr
 safety, and scope sections also unchanged (`off_topic` passed with zero tool calls;
 `sparse_data_honesty` passed with the model widening its species search radius unprompted).
 
+---
+
+## V3 — image identification (2026-06-11)
+
+Added in response to a product requirement: users must be able to **upload photos** of what
+they saw, and ReefScout must **show reference photos** of candidate species so the user can
+visually confirm ("did it look like this?"). This drove a new MCP tool (`get_species_images`,
+iNaturalist taxon photos) and multimodal input (photos sent as vision blocks). V3 adds one new
+prompt section and leaves everything from V2 intact.
+
+**New `# Photos` section, two behaviors:**
+1. *User-supplied photo* — start the ID from concrete visible features (color, pattern, fin/body
+   shape, habitat in frame) before naming candidates, so the reasoning is followable; if the
+   photo is too poor to be sure, say so and ask for the most useful missing detail rather than
+   overcommitting.
+2. *Reference photos* — when proposing candidates, embed 1–3 iNaturalist photos as markdown
+   images with the photographer attribution on the next line, then ask which matches.
+
+**Design choices worth noting:**
+- Attribution is **mandatory** in the prompt *and* enforced in the eval (`id_shows_photo`
+  checks for an embedded image AND a credit line) — these are other people's licensed photos.
+- The tool description tells the model exactly how to embed (`![alt](url)` + italic credit),
+  so formatting guidance lives next to the tool, not only in the system prompt.
+
+**Eval:** new `id_shows_photo` case + full re-run = **9/9**, no regression on the prior 8.
+Observed bonus behavior: on "what will I see?", the model now fetches reference photos for
+several highlight species unprompted, turning a name list into a visual field guide.
+
