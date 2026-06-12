@@ -375,6 +375,7 @@ header.glass {
 }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(103,232,249,0.5); }
 .field textarea { resize: vertical; min-height: 56px; }
+.field-hint { font-size: 0.74rem; color: var(--ink-dim); margin: -6px 2px 14px; line-height: 1.4; }
 .field select option { background: #06294a; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
 .modal-actions button { font-family: var(--font); font-size: 0.85rem; font-weight: 650; cursor: pointer; padding: 9px 18px; border-radius: 999px; }
@@ -1301,24 +1302,41 @@ modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) c
 
 function sightingForm(data = {}, id = null) {
   if (!authUser) return;
-  const opts = TAXON_GROUPS.map(g => `<option value="${g.key}" ${data.group === g.key ? 'selected' : ''}>${g.emoji} ${g.label}</option>`).join('');
   showModal(`<h3>${id ? 'Edit sighting' : 'Log a sighting'}</h3>
-    <div class="field"><label>Common name</label><input id="f-common" value="${escapeAttr(data.commonName || '')}" placeholder="e.g. Garibaldi"></div>
-    <div class="field"><label>Scientific name (optional)</label><input id="f-sci" value="${escapeAttr(data.scientificName || '')}" placeholder="e.g. Hypsypops rubicundus"></div>
-    <div class="field"><label>Group</label><select id="f-group">${opts}</select></div>
+    <div class="field"><label>Name</label><input id="f-common" value="${escapeAttr(data.commonName || data.scientificName || '')}" placeholder="e.g. Garibaldi"></div>
+    <div class="field-hint">We'll look up the scientific name, taxon group, and conservation status for you.</div>
     <div class="field"><label>Place</label><input id="f-place" value="${escapeAttr(data.place || '')}" placeholder="e.g. La Jolla Cove"></div>
     <div class="field"><label>Date</label><input id="f-date" type="date" value="${escapeAttr(data.date || todayISO())}"></div>
-    <div class="field"><label>Conservation status (optional)</label><input id="f-iucn" value="${escapeAttr(data.iucn || '')}" placeholder="e.g. Least Concern"></div>
     <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Anything memorable?">${escapeHtml(data.notes || '')}</textarea></div>
     <div class="modal-actions"><button class="cancel" id="f-cancel" type="button">Cancel</button><button class="save" id="f-save" type="button">${id ? 'Save' : 'Add to logbook'}</button></div>`);
   document.getElementById('f-cancel').onclick = closeModal;
-  document.getElementById('f-save').onclick = async () => {
-    const rec = { commonName: val('f-common'), scientificName: val('f-sci'), group: val('f-group'),
-                  place: val('f-place'), date: val('f-date'), iucn: val('f-iucn'), notes: val('f-notes'),
-                  source: data.source || 'manual' };
-    if (!rec.commonName && !rec.scientificName) { alert('Give the creature at least a common or scientific name.'); return; }
+  const saveBtn = document.getElementById('f-save');
+  saveBtn.onclick = async () => {
+    const name = val('f-common');
+    if (!name) { alert('What did you see? A name is required.'); return; }
+    const place = val('f-place'), date = val('f-date'), notes = val('f-notes');
+    const origLabel = saveBtn.textContent;
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+
+    // Auto-enrich the hidden fields. Reuse anything already parsed from an agent ID;
+    // otherwise resolve from the name via WoRMS (free, no API key). Best-effort.
+    let sci = data.scientificName || '', group = data.group || '', iucn = data.iucn || '';
+    if (!sci || !group || !iucn) {
+      try {
+        const q = data.scientificName || name;
+        const r = await fetch('/species/resolve?name=' + encodeURIComponent(q)).then(x => x.json());
+        if (r && r.found) {
+          sci = sci || r.scientific_name || '';
+          group = group || r.group || '';
+          iucn = iucn || r.iucn_status || '';
+        }
+      } catch (e) { /* enrichment is optional — save with what we have */ }
+    }
+    if (!group) group = guessGroup(name + ' ' + sci);   // keyword fallback
+
+    const rec = { commonName: name, scientificName: sci, group, place, date, iucn: iucn || '', notes, source: data.source || 'manual' };
     try { id ? await window.ReefLog.updateSighting(id, rec) : await window.ReefLog.addSighting(rec); closeModal(); renderLogbook(); }
-    catch (e) { alert('Could not save: ' + e.message); }
+    catch (e) { saveBtn.disabled = false; saveBtn.textContent = origLabel; alert('Could not save: ' + e.message); }
   };
 }
 

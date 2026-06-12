@@ -72,6 +72,66 @@ async def health() -> dict:
     return {"status": "ok", "agent": "live" if agent is not None else "demo"}
 
 
+def _derive_group(classification: dict) -> str:
+    """Map a WoRMS classification to a logbook taxon group."""
+    phylum = (classification.get("phylum") or "").lower()
+    cls = (classification.get("class") or "").lower()
+    order = (classification.get("order") or "").lower()
+    if phylum == "mollusca":
+        return "mollusk"
+    if phylum == "echinodermata":
+        return "echinoderm"
+    if phylum == "cnidaria":
+        return "cnidarian"
+    if phylum == "arthropoda":  # marine arthropods in scope are effectively crustaceans
+        return "crustacean"
+    if phylum == "chordata":
+        if cls in ("elasmobranchii", "chondrichthyes") or "shark" in order or "ray" in order:
+            return "shark_ray"
+        if cls in ("actinopterygii", "actinopteri", "teleostei"):
+            return "fish"
+        if cls == "reptilia" or order == "testudines":
+            return "turtle"
+        if cls == "mammalia":
+            return "mammal"
+        if cls == "aves":
+            return "seabird"
+        return "fish"
+    return "other"
+
+
+@app.get("/species/resolve")
+async def resolve_species(name: str) -> dict:
+    """Look up authoritative details for a species the user logged by name.
+
+    Used by the logbook so the user only types a name — scientific name, taxon group,
+    and conservation status are filled in from WoRMS automatically. No LLM, no API key.
+    """
+    from app import ocean_data
+
+    name = (name or "").strip()
+    if not name:
+        return {"found": False}
+    search = await ocean_data.search_taxa(name, fuzzy=True, limit=1)
+    if not search.get("found"):
+        return {"found": False}
+
+    cand = search["candidates"][0]
+    classification = cand.get("classification", {})
+    iucn = None
+    if cand.get("aphia_id"):
+        detail = await ocean_data.species_detail(cand["aphia_id"])
+        if detail.get("found"):
+            classification = detail.get("classification", classification)
+            iucn = detail.get("iucn_status")
+    return {
+        "found": True,
+        "scientific_name": cand.get("scientific_name"),
+        "group": _derive_group(classification),
+        "iucn_status": iucn,
+    }
+
+
 @app.post("/chat")
 async def chat(req: ChatRequest) -> dict:
     if agent is None:
