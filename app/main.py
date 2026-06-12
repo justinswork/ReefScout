@@ -1,27 +1,53 @@
 """
 main.py — ReefScout's FastAPI backend.
 
-Serves the Liquid-Glass chat UI and the /chat endpoint the UI talks to.
+Serves the Liquid-Glass chat UI and /chat, which runs the real agent loop
+(app/agent.py): Claude + the MCP ocean-data tools, with a tool-call trace
+returned alongside every reply.
 
-NOTE (Phase 3 pending): /chat currently runs in DEMO MODE — it returns a canned
-response with a simulated tool trace so the UI can be developed and reviewed
-before the agent loop exists. The response carries `"demo": true` and the UI
-displays a visible "demo mode" badge; nothing here pretends to be the real
-agent. Phase 3 replaces the stub body with the MCP-client agent loop.
+If ANTHROPIC_API_KEY is not configured, /chat falls back to an explicit DEMO
+MODE response (carrying `"demo": true`, surfaced as a badge in the UI) so the
+frontend remains reviewable without a key. The deployed app always has a key.
 """
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="ReefScout", version="0.1.0")
+load_dotenv()  # before anything reads ANTHROPIC_API_KEY
+
+import os  # noqa: E402
+
+from app.agent import ReefScoutAgent  # noqa: E402
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+agent: ReefScoutAgent | None = None
+
+
+def _has_api_key() -> bool:
+    return bool(os.environ.get("ANTHROPIC_API_KEY", "").strip().startswith("sk-"))
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global agent
+    if _has_api_key():
+        agent = ReefScoutAgent()
+        await agent.start()  # spawn MCP server subprocess once, reuse across requests
+    yield
+    if agent is not None:
+        await agent.stop()
+        agent = None
+
+
+app = FastAPI(title="ReefScout", version="0.2.0", lifespan=lifespan)
 
 
 class ChatTurn(BaseModel):
@@ -36,47 +62,38 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "demo_mode": True}
+    return {"status": "ok", "agent": "live" if agent is not None else "demo"}
 
 
 @app.post("/chat")
 async def chat(req: ChatRequest) -> dict:
-    # ------------------------------------------------------------------
-    # DEMO MODE STUB — replaced by the real MCP agent loop in Phase 3.
-    # Returns the exact response shape the real agent will produce, so the
-    # UI is built against the final contract.
-    # ------------------------------------------------------------------
+    if agent is None:
+        return _demo_response()
+
+    # Cap history so a long session can't grow unbounded on the personal API key.
+    history = [t.model_dump() for t in req.history[-12:]]
+    try:
+        result = await agent.run(req.message, history)
+    except Exception as exc:  # noqa: BLE001 - degrade to a readable chat error
+        return {
+            "reply": ("**Something went wrong on my end.** The live data sources and the "
+                      f"model are usually quick to recover — please try again.\n\n`{exc}`"),
+            "trace": [],
+            "error": True,
+        }
+    return {"reply": result["reply"], "trace": result["trace"]}
+
+
+def _demo_response() -> dict:
     return {
         "demo": True,
         "reply": (
-            "**Demo mode** — the ReefScout agent isn't connected yet, so this is a "
-            "placeholder reply showing how answers will look.\n\n"
-            "Once live, I'll check real conditions for your question:\n"
-            "- **Waves & water temp** from Open-Meteo Marine\n"
-            "- **Tides** from the nearest NOAA station\n"
-            "- **What you're likely to see** from iNaturalist sightings\n\n"
-            "Try the trace panel below this message to see how tool calls will be displayed."
+            "**Demo mode** — no API key is configured on this server, so the agent isn't "
+            "live. The deployed version of ReefScout answers with real ocean data: waves "
+            "and water temperature from Open-Meteo, tides from NOAA, and recent wildlife "
+            "sightings from iNaturalist."
         ),
-        "trace": [
-            {
-                "tool": "geocode_place",
-                "args": {"place": "La Jolla"},
-                "summary": "→ 32.85, -117.27 (San Diego, California)",
-                "ms": 312,
-            },
-            {
-                "tool": "get_marine_conditions",
-                "args": {"latitude": 32.85, "longitude": -117.27, "date": "2026-06-13"},
-                "summary": "→ waves 1.2 m max · swell 1.0 m · water 21.5 °C",
-                "ms": 489,
-            },
-            {
-                "tool": "get_tides",
-                "args": {"latitude": 32.85, "longitude": -117.27, "date": "2026-06-13"},
-                "summary": "→ low −1.2 ft 02:49 · high 6.8 ft 20:10 (station: La Jolla, 1.1 km)",
-                "ms": 641,
-            },
-        ],
+        "trace": [],
     }
 
 

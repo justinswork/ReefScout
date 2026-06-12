@@ -37,15 +37,22 @@ Plain async functions that hit each live API and return normalized Python dicts.
 - ☑ Verified over real stdio JSON-RPC in `tests/test_mcp_server.py`: list_tools shows all 6
   with schemas; call_tool("geocode_place") executes end-to-end. Both tests green.
 
-## Phase 3 — Agent loop + backend (`agent.py`, `main.py`)
-- ☐ Read the `claude-api` reference before writing any Anthropic code (model IDs, tool-use loop).
-- ☐ MCP client connects to the server, lists tools, converts them to the Anthropic `tools` schema.
-- ☐ Tool-call loop: send messages → if `stop_reason == tool_use`, dispatch each `tool_use` to the
-  MCP server, append `tool_result`, loop; else return final text (rubric #6, #7).
-- ☐ Model: `claude-sonnet-4-6` (strong tool use, lower cost on the personal key).
-- ☐ FastAPI routes: `POST /chat` (message in, agent reply + optional trace out), `GET /` (UI),
-  `GET /health`.
-- ☐ Return a **tool-call trace** alongside the answer so the UI and eval can show what the model did.
+## Phase 3 — Agent loop + backend (`app/agent.py`, `app/main.py`) ☑
+- ☑ Read the `claude-api` reference before writing Anthropic code.
+- ☑ `ReefScoutAgent`: persistent MCP client (stdio subprocess spawned once at FastAPI startup
+  via lifespan), lists tools, converts MCP schemas → Anthropic `tools` shape.
+- ☑ Manual tool-call loop (deliberately not the SDK auto-runner — the loop is the rubric
+  evidence): `stop_reason == "tool_use"` → dispatch each block over MCP → append tool_result →
+  loop; else return text. 12-iteration safety cap. (#6, #7)
+- ☑ Model: `claude-sonnet-4-6` (REEFSCOUT_MODEL overridable). Prompt caching: breakpoint on
+  the stable system block (caches tools+system); volatile date block placed after it.
+- ☑ `/chat` runs the real agent; demo mode only as explicit no-API-key fallback.
+- ☑ Tool-call trace ({tool, args, summary, ms}) returned with every reply → UI + eval.
+- ☑ Smoke-tested live: planning question chained geocode→conditions→tides(→species when asked).
+  **Findings:** (a) model retried failed geocode 'La Jolla Cove'→'La Jolla' unprompted —
+  adaptive behavior; (b) caught grounding bug: model resolved "tomorrow" from training data
+  (wrong year) — fixed by injecting today's date as a post-breakpoint system block;
+  (c) model omits species lookup when the question doesn't ask about wildlife.
 
 ## Phase 4 — Prompts (`prompts.py` + `prompts/PROMPT_LOG.md`)
 - ☐ System prompt v1: role, scope, tool-use guidance, safety disclaimer, output format.
