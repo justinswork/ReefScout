@@ -23,7 +23,12 @@ You only need to do this once. ~10 minutes.
 ## 4. Apply the security rules
 Firestore → **Rules** tab. Paste the contents of [`firestore.rules`](../firestore.rules) and
 **Publish**. These rules let each user read/write only their own
-`users/{uid}/conversations/*` and deny everything else.
+`users/{uid}/conversations/*`, `users/{uid}/sightings/*`, and `users/{uid}/trips/*`, and deny
+everything else.
+
+> ⚠️ **If you set up history before the logbook feature:** the rules file gained `sightings` and
+> `trips` collections. Re-paste and **Publish** the current `firestore.rules`, or logbook saves
+> will fail with `permission-denied`.
 
 ## 5. Register a web app and copy the config
 1. Project settings (⚙️) → **Your apps** → **Web** (`</>`) → register an app (no Hosting needed).

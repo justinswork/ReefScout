@@ -16,6 +16,14 @@ Legend: ☐ todo · ◐ in progress · ☑ done
 > `docs/FIREBASE_SETUP.md`; rules in `firestore.rules`. Also fixed two UI bugs found while
 > building it: markdown tables now render (planning answers use them heavily), and the `[hidden]`
 > attribute on icon buttons was being overridden by author CSS.
+>
+> **Added mid-build (user request):** naturalist **logbook** — a life-list of wildlife sightings
+> (grouped by taxon: fish, mollusks, turtles, crustaceans…) + logged trips, per signed-in user.
+> New Firestore collections `users/{uid}/sightings` + `users/{uid}/trips` (rules updated — must be
+> re-published). Full-view UI with stats (species/sightings/trips/places + conservation-concern
+> count), add/edit/delete modals, and an **"➕ Add to logbook"** button on agent ID replies that
+> pre-fills the species (common + scientific name, taxon group inferred) from the reply. Photos of
+> the user's own catches deferred to v2 (needs Firebase Storage). Signed-out users don't see it.
 
 ---
 

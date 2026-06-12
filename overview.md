@@ -103,6 +103,24 @@ fully functional but ephemeral.
 
 See `docs/FIREBASE_SETUP.md` for the one-time project setup.
 
+## Naturalist logbook
+
+Signed-in users get a personal **logbook** — a marine life-list plus a trip log, the payoff of
+the identification flow.
+
+- **Sightings** (`users/{uid}/sightings`): common + scientific name, taxon **group** (fish,
+  mollusk, turtle, crustacean, shark/ray, echinoderm, cnidarian, mammal, seabird), place, date,
+  notes, and conservation status. A `source` field marks whether it came from a ReefScout ID or
+  was entered manually.
+- **Trips** (`users/{uid}/trips`): place, date, notes.
+- **Life list** is the distinct species across sightings, grouped by taxon, with a stats header
+  (species / sightings / trips / places, plus a count of conservation-concern species).
+- **Integration:** after the agent identifies something, the reply carries an
+  **"➕ Add to logbook"** button that pre-fills the species and inferred taxon group straight from
+  the answer — the agent does the identification, the logbook captures it. Trips and manual
+  sightings are added from the logbook view.
+- **v2 / not yet:** photos of the user's own catches (would use Firebase Storage).
+
 ## Tech stack
 
 - **Backend:** Python + FastAPI

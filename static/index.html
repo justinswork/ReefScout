@@ -297,6 +297,98 @@ header.glass {
   background: linear-gradient(145deg, rgba(103,232,249,0.95), rgba(13,148,196,0.95));
   border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer;
 }
+
+/* ---------- Logbook view ---------- */
+.logbook {
+  position: relative; z-index: 1;
+  flex: 1 1 auto; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 4px 2px;
+  animation: surface .4s cubic-bezier(.2,.9,.3,1.1) both;
+}
+.logbook[hidden] { display: none; }
+.lb-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px; }
+.lb-head h2 { font-size: 1.25rem; font-weight: 740; }
+.lb-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 560px) { .lb-stats { grid-template-columns: repeat(2, 1fr); } }
+.stat {
+  padding: 14px; border-radius: var(--radius-md); text-align: center;
+  background: linear-gradient(150deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.13);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.stat .num { font-size: 1.6rem; font-weight: 760;
+  background: linear-gradient(90deg, var(--teal), var(--aqua));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.stat .lbl { font-size: 0.72rem; color: var(--ink-dim); margin-top: 2px; }
+.lb-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.lb-add {
+  font-family: var(--font); font-size: 0.85rem; font-weight: 650; color: #04293f; cursor: pointer;
+  padding: 10px 18px; border-radius: 999px;
+  background: linear-gradient(145deg, rgba(103,232,249,0.95), rgba(13,148,196,0.95));
+  border: 1px solid rgba(180,245,255,0.6); box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
+  transition: transform .18s ease;
+}
+.lb-add.ghost { color: var(--ink); background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18); box-shadow: none; }
+.lb-add:hover { transform: translateY(-1px); }
+.lb-section { display: flex; flex-direction: column; gap: 8px; }
+.lb-section h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--aqua); padding: 0 4px; }
+.lb-group-label { font-size: 0.72rem; color: var(--ink-dim); margin: 6px 4px 2px; }
+.lb-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: var(--radius-md);
+  background: var(--glass-bg); border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.lb-card .emoji { font-size: 1.4rem; flex: 0 0 auto; }
+.lb-card .main { flex: 1 1 auto; min-width: 0; }
+.lb-card .name { font-size: 0.95rem; font-weight: 600; }
+.lb-card .name .sci { font-style: italic; font-weight: 400; color: var(--ink-dim); font-size: 0.85rem; }
+.lb-card .meta { font-size: 0.76rem; color: var(--ink-dim); margin-top: 2px; }
+.lb-card .iucn { font-size: 0.66rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: rgba(253,164,175,0.16); color: #fecdd3; border: 1px solid rgba(253,164,175,0.3); white-space: nowrap; }
+.lb-card .row-actions { display: flex; gap: 4px; flex: 0 0 auto; }
+.lb-card .row-actions button { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 0.85rem; padding: 4px 6px; border-radius: 8px; }
+.lb-card .row-actions button:hover { color: var(--ink); background: rgba(255,255,255,0.08); }
+.lb-card .row-actions .del:hover { color: #fda4af; background: rgba(253,164,175,0.12); }
+.lb-empty { color: var(--ink-dim); font-size: 0.85rem; padding: 18px 4px; }
+
+/* Modal form */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 18px;
+  background: rgba(1,10,28,0.6); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+.modal-backdrop[hidden] { display: none; }
+.modal {
+  width: min(440px, 100%); max-height: 88vh; overflow-y: auto; padding: 20px;
+  background: linear-gradient(155deg, rgba(12,46,80,0.98), rgba(3,21,46,0.98));
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 24px 60px rgba(1,10,28,0.7);
+}
+.modal h3 { font-size: 1.1rem; margin-bottom: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.field label { font-size: 0.76rem; color: var(--ink-dim); font-weight: 600; }
+.field input, .field select, .field textarea {
+  font-family: var(--font); font-size: 0.9rem; color: var(--ink);
+  background: rgba(2,16,38,0.6); border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 10px; padding: 9px 11px; outline: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: rgba(103,232,249,0.5); }
+.field textarea { resize: vertical; min-height: 56px; }
+.field select option { background: #06294a; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+.modal-actions button { font-family: var(--font); font-size: 0.85rem; font-weight: 650; cursor: pointer; padding: 9px 18px; border-radius: 999px; }
+.modal-actions .cancel { color: var(--ink); background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18); }
+.modal-actions .save { color: #04293f; background: linear-gradient(145deg, rgba(103,232,249,0.95), rgba(13,148,196,0.95)); border: 1px solid rgba(180,245,255,0.6); }
+
+/* "Add to logbook" button under an agent reply */
+.log-cta {
+  margin-top: 11px; display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font); font-size: 0.78rem; font-weight: 600; color: var(--aqua); cursor: pointer;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(103,232,249,0.1); border: 1px solid rgba(103,232,249,0.3);
+}
+.log-cta:hover { background: rgba(103,232,249,0.18); }
 .badge {
   font-size: 0.72rem; font-weight: 600;
   padding: 5px 12px; border-radius: 999px;
@@ -587,6 +679,9 @@ main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radiu
     </button>
     <div class="badges">
       <span class="badge demo" id="demoBadge">demo mode</span>
+      <button class="icon-btn" id="logBtn" type="button" title="Your logbook" aria-label="Open logbook" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M9 3v18M19 7h-6M19 11h-6"/></svg>
+      </button>
       <button class="icon-btn" id="histBtn" type="button" title="Your conversations" aria-label="Conversation history" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-7 3.3M3 4.5V8h3.5"/><path d="M12 8v4l3 2"/></svg>
       </button>
@@ -622,6 +717,25 @@ main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radiu
     </div>
     <div class="conv-list" id="convList"></div>
   </aside>
+
+  <!-- Naturalist logbook (full-view overlay; signed-in only) -->
+  <section class="logbook" id="logbook" hidden aria-label="Your logbook">
+    <div class="lb-head">
+      <h2>🐚 Your logbook</h2>
+      <button class="drawer-close" id="lbClose" type="button" aria-label="Back to chat">✕</button>
+    </div>
+    <div class="lb-stats" id="lbStats"></div>
+    <div class="lb-actions">
+      <button class="lb-add" id="addSightingBtn" type="button">＋ Log a sighting</button>
+      <button class="lb-add ghost" id="addTripBtn" type="button">＋ Log a trip</button>
+    </div>
+    <div class="lb-body" id="lbBody"></div>
+  </section>
+
+  <!-- Add/edit modal for sightings and trips -->
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <div class="modal glass" id="modal" role="dialog" aria-modal="true"></div>
+  </div>
 
   <main id="chat" aria-live="polite">
     <section class="hero glass" id="hero">
@@ -703,6 +817,7 @@ const demoBadge = document.getElementById('demoBadge');
 const newChat = document.getElementById('newChat');
 const brandHome = document.getElementById('brandHome');
 const histBtn = document.getElementById('histBtn');
+const logBtn = document.getElementById('logBtn');
 const authBtn = document.getElementById('authBtn');
 let pending = false;
 
@@ -891,7 +1006,8 @@ async function sendMessage(text) {
 
     typing.remove();
     demoBadge.classList.toggle('on', !!data.demo);
-    addMessage('agent', md(data.reply || '(no reply)'), data.trace);
+    const agentEl = addMessage('agent', md(data.reply || '(no reply)'), data.trace);
+    attachLogCta(agentEl, data.reply || '');
     current.messages.push({ role: 'assistant', content: data.reply || '', trace: data.trace, demo: !!data.demo });
     current.updatedAt = Date.now();
     persist();
@@ -929,6 +1045,7 @@ function resetConversation() {
   current = null;
   attachments = [];
   renderPreviews();
+  if (typeof closeLogbook === 'function') closeLogbook();
   chat.querySelectorAll('.msg').forEach(m => m.remove());
   if (hero) hero.style.display = '';   // bring the welcome screen back
   newChat.classList.remove('on');
@@ -958,12 +1075,13 @@ function relTime(ts) {
 /* Replay a stored conversation into the chat view. */
 function renderConversation(conv) {
   current = conv;
+  if (typeof closeLogbook === 'function') closeLogbook();
   chat.querySelectorAll('.msg').forEach(m => m.remove());
   if (hero) hero.style.display = 'none';
   newChat.classList.add('on');
   for (const m of conv.messages) {
     if (m.role === 'user') addMessage('user', md(m.content));
-    else addMessage('agent', md(m.content), m.trace);
+    else { const el = addMessage('agent', md(m.content), m.trace); attachLogCta(el, m.content); }
   }
   chat.scrollTo({ top: chat.scrollHeight });
 }
@@ -1034,10 +1152,12 @@ function renderAuth() {
     }
     authBtn.title = 'Sign out (' + name + ')';
     histBtn.hidden = false;
+    logBtn.hidden = false;
   } else {
     authBtn.innerHTML = 'Sign in';
     authBtn.title = 'Sign in with Google to save conversations';
     histBtn.hidden = true;
+    logBtn.hidden = true;
   }
 }
 // Called by the Firebase module on every auth state change (and once at startup).
@@ -1047,7 +1167,7 @@ window.__onAuth = async (user) => {
   renderAuth();
   // Persist a conversation started before signing in, then refresh the list.
   if (justSignedIn) { await persist(); }
-  if (!user) { closeDrawer(); closeUserMenu(); }
+  if (!user) { closeDrawer(); closeUserMenu(); closeLogbook(); }
 };
 
 /* Account dropdown menu */
@@ -1081,6 +1201,195 @@ authBtn.addEventListener('click', (e) => {
 signOutBtn.addEventListener('click', () => { closeUserMenu(); window.ReefAuth.signOut(); });
 document.addEventListener('click', (e) => { if (!e.target.closest('.auth-wrap')) closeUserMenu(); });
 
+/* ============================ logbook ============================ */
+const logbook = document.getElementById('logbook');
+const lbBody = document.getElementById('lbBody');
+const lbStats = document.getElementById('lbStats');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modal = document.getElementById('modal');
+
+const TAXON_GROUPS = [
+  { key: 'fish',        label: 'Fish',                              emoji: '🐠' },
+  { key: 'shark_ray',   label: 'Sharks & rays',                     emoji: '🦈' },
+  { key: 'mollusk',     label: 'Mollusks (snails, octopus, slugs)', emoji: '🐙' },
+  { key: 'crustacean',  label: 'Crustaceans (crabs, shrimp)',       emoji: '🦀' },
+  { key: 'turtle',      label: 'Turtles & reptiles',                emoji: '🐢' },
+  { key: 'echinoderm',  label: 'Sea stars & urchins',               emoji: '⭐' },
+  { key: 'cnidarian',   label: 'Jellies, corals & anemones',        emoji: '🪼' },
+  { key: 'mammal',      label: 'Marine mammals',                    emoji: '🐬' },
+  { key: 'seabird',     label: 'Seabirds',                          emoji: '🐦' },
+  { key: 'other',       label: 'Other',                             emoji: '🌊' },
+];
+const groupInfo = k => TAXON_GROUPS.find(g => g.key === k) || TAXON_GROUPS[TAXON_GROUPS.length - 1];
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const escapeAttr = s => escapeHtml(s).replaceAll('"', '&quot;');
+const val = id => document.getElementById(id).value.trim();
+
+function openLogbook() {
+  if (!authUser || !window.ReefLog) { if (window.ReefAuth) window.ReefAuth.signIn(); return; }
+  closeDrawer(); closeUserMenu();
+  if (hero) hero.style.display = 'none';
+  chat.style.display = 'none';
+  composer.style.display = 'none';
+  logbook.hidden = false;
+  renderLogbook();
+}
+function closeLogbook() {
+  if (logbook.hidden) return;
+  logbook.hidden = true;
+  chat.style.display = '';
+  composer.style.display = '';
+  if (!current && hero) hero.style.display = '';   // back to hero only if no active chat
+}
+
+const stat = (n, l) => `<div class="stat"><div class="num">${n}</div><div class="lbl">${l}</div></div>`;
+
+async function renderLogbook() {
+  lbBody.innerHTML = '<div class="lb-empty">Loading…</div>';
+  let sightings = [], trips = [];
+  try { [sightings, trips] = await Promise.all([window.ReefLog.listSightings(), window.ReefLog.listTrips()]); }
+  catch (e) { lbBody.innerHTML = `<div class="lb-empty">Couldn't load your logbook: ${escapeHtml(e.message)}</div>`; return; }
+
+  const species = new Set(sightings.map(s => (s.scientificName || s.commonName || '').toLowerCase()).filter(Boolean));
+  const places = new Set([...sightings.map(s => s.place), ...trips.map(t => t.place)].filter(Boolean).map(p => p.toLowerCase()));
+  const iucnCount = sightings.filter(s => /\b(VU|EN|CR|NT)\b|threat|endanger|vulnerable/i.test(s.iucn || '')).length;
+  lbStats.innerHTML = stat(species.size, 'species') + stat(sightings.length, 'sightings') + stat(trips.length, 'trips') + stat(places.size, 'places')
+    + (iucnCount ? `<div class="stat" style="grid-column:1/-1"><div class="num">${iucnCount}</div><div class="lbl">of conservation concern 💛</div></div>` : '');
+
+  let html = '<div class="lb-section"><h3>Life list</h3>';
+  if (!sightings.length) {
+    html += `<div class="lb-empty">No sightings yet. Identify a creature in chat and tap "Add to logbook," or log one directly here.</div>`;
+  } else {
+    const byGroup = {};
+    sightings.forEach(s => { const k = s.group || 'other'; (byGroup[k] = byGroup[k] || []).push(s); });
+    TAXON_GROUPS.forEach(g => {
+      const items = byGroup[g.key]; if (!items) return;
+      html += `<div class="lb-group-label">${g.emoji} ${escapeHtml(g.label)} · ${items.length}</div>`;
+      items.forEach(s => { html += sightingCard(s, g); });
+    });
+  }
+  html += '</div><div class="lb-section"><h3>Trips</h3>';
+  html += trips.length ? trips.map(tripCard).join('') : '<div class="lb-empty">No trips logged yet.</div>';
+  html += '</div>';
+  lbBody.innerHTML = html;
+}
+
+function sightingCard(s, g) {
+  g = g || groupInfo(s.group);
+  const sci = s.scientificName ? ` <span class="sci">${escapeHtml(s.scientificName)}</span>` : '';
+  const meta = [s.place, s.date].filter(Boolean).map(escapeHtml).join(' · ');
+  return `<div class="lb-card">
+    <span class="emoji">${g.emoji}</span>
+    <div class="main"><div class="name">${escapeHtml(s.commonName || s.scientificName || 'Unknown')}${sci}</div>
+      <div class="meta">${meta || '—'}${s.notes ? ' · ' + escapeHtml(s.notes) : ''}</div></div>
+    ${s.iucn ? `<span class="iucn">${escapeHtml(s.iucn)}</span>` : ''}
+    <div class="row-actions"><button class="edit" data-edit-s="${s.id}" title="Edit">✏️</button><button class="del" data-del-s="${s.id}" title="Delete">🗑</button></div>
+  </div>`;
+}
+function tripCard(t) {
+  return `<div class="lb-card">
+    <span class="emoji">📍</span>
+    <div class="main"><div class="name">${escapeHtml(t.place || 'Trip')}</div>
+      <div class="meta">${escapeHtml(t.date || '—')}${t.notes ? ' · ' + escapeHtml(t.notes) : ''}</div></div>
+    <div class="row-actions"><button class="edit" data-edit-t="${t.id}" title="Edit">✏️</button><button class="del" data-del-t="${t.id}" title="Delete">🗑</button></div>
+  </div>`;
+}
+
+function showModal(html) { modal.innerHTML = html; modalBackdrop.hidden = false; }
+function closeModal() { modalBackdrop.hidden = true; modal.innerHTML = ''; }
+modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
+
+function sightingForm(data = {}, id = null) {
+  if (!authUser) return;
+  const opts = TAXON_GROUPS.map(g => `<option value="${g.key}" ${data.group === g.key ? 'selected' : ''}>${g.emoji} ${g.label}</option>`).join('');
+  showModal(`<h3>${id ? 'Edit sighting' : 'Log a sighting'}</h3>
+    <div class="field"><label>Common name</label><input id="f-common" value="${escapeAttr(data.commonName || '')}" placeholder="e.g. Garibaldi"></div>
+    <div class="field"><label>Scientific name (optional)</label><input id="f-sci" value="${escapeAttr(data.scientificName || '')}" placeholder="e.g. Hypsypops rubicundus"></div>
+    <div class="field"><label>Group</label><select id="f-group">${opts}</select></div>
+    <div class="field"><label>Place</label><input id="f-place" value="${escapeAttr(data.place || '')}" placeholder="e.g. La Jolla Cove"></div>
+    <div class="field"><label>Date</label><input id="f-date" type="date" value="${escapeAttr(data.date || todayISO())}"></div>
+    <div class="field"><label>Conservation status (optional)</label><input id="f-iucn" value="${escapeAttr(data.iucn || '')}" placeholder="e.g. Least Concern"></div>
+    <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Anything memorable?">${escapeHtml(data.notes || '')}</textarea></div>
+    <div class="modal-actions"><button class="cancel" id="f-cancel" type="button">Cancel</button><button class="save" id="f-save" type="button">${id ? 'Save' : 'Add to logbook'}</button></div>`);
+  document.getElementById('f-cancel').onclick = closeModal;
+  document.getElementById('f-save').onclick = async () => {
+    const rec = { commonName: val('f-common'), scientificName: val('f-sci'), group: val('f-group'),
+                  place: val('f-place'), date: val('f-date'), iucn: val('f-iucn'), notes: val('f-notes'),
+                  source: data.source || 'manual' };
+    if (!rec.commonName && !rec.scientificName) { alert('Give the creature at least a common or scientific name.'); return; }
+    try { id ? await window.ReefLog.updateSighting(id, rec) : await window.ReefLog.addSighting(rec); closeModal(); renderLogbook(); }
+    catch (e) { alert('Could not save: ' + e.message); }
+  };
+}
+
+function tripForm(data = {}, id = null) {
+  if (!authUser) return;
+  showModal(`<h3>${id ? 'Edit trip' : 'Log a trip'}</h3>
+    <div class="field"><label>Place</label><input id="t-place" value="${escapeAttr(data.place || '')}" placeholder="e.g. Monterey Bay"></div>
+    <div class="field"><label>Date</label><input id="t-date" type="date" value="${escapeAttr(data.date || todayISO())}"></div>
+    <div class="field"><label>Notes</label><textarea id="t-notes" placeholder="Conditions, who you went with, what stood out…">${escapeHtml(data.notes || '')}</textarea></div>
+    <div class="modal-actions"><button class="cancel" id="t-cancel" type="button">Cancel</button><button class="save" id="t-save" type="button">${id ? 'Save' : 'Log trip'}</button></div>`);
+  document.getElementById('t-cancel').onclick = closeModal;
+  document.getElementById('t-save').onclick = async () => {
+    const rec = { place: val('t-place'), date: val('t-date'), notes: val('t-notes') };
+    if (!rec.place) { alert('Where did you go? A place name is required.'); return; }
+    try { id ? await window.ReefLog.updateTrip(id, rec) : await window.ReefLog.addTrip(rec); closeModal(); renderLogbook(); }
+    catch (e) { alert('Could not save: ' + e.message); }
+  };
+}
+
+// Edit/delete via event delegation on the logbook body.
+lbBody.addEventListener('click', async e => {
+  const ds = e.target.closest('[data-del-s]'); if (ds) { if (confirm('Delete this sighting?')) { await window.ReefLog.deleteSighting(ds.dataset.delS); renderLogbook(); } return; }
+  const dt = e.target.closest('[data-del-t]'); if (dt) { if (confirm('Delete this trip?')) { await window.ReefLog.deleteTrip(dt.dataset.delT); renderLogbook(); } return; }
+  const es = e.target.closest('[data-edit-s]'); if (es) { const s = (await window.ReefLog.listSightings()).find(x => x.id === es.dataset.editS); if (s) sightingForm(s, s.id); return; }
+  const et = e.target.closest('[data-edit-t]'); if (et) { const t = (await window.ReefLog.listTrips()).find(x => x.id === et.dataset.editT); if (t) tripForm(t, t.id); return; }
+});
+
+logBtn.addEventListener('click', openLogbook);
+document.getElementById('lbClose').addEventListener('click', closeLogbook);
+document.getElementById('addSightingBtn').addEventListener('click', () => sightingForm({ date: todayISO() }));
+document.getElementById('addTripBtn').addEventListener('click', () => tripForm({ date: todayISO() }));
+
+/* Pull a candidate species out of an agent reply for the "Add to logbook" prefill. */
+function guessGroup(s) {
+  s = s.toLowerCase();
+  if (/turtle|tortoise/.test(s)) return 'turtle';
+  if (/\bcrab\b|lobster|shrimp|prawn|crustacean|barnacle/.test(s)) return 'crustacean';
+  if (/octopus|squid|nudibranch|\bsnail\b|sea slug|sea hare|limpet|mollusk|clam|mussel|abalone|cuttlefish|chiton/.test(s)) return 'mollusk';
+  if (/shark|\bray\b|skate|guitarfish/.test(s)) return 'shark_ray';
+  if (/urchin|sea star|starfish|sea cucumber|sand dollar|echinoderm/.test(s)) return 'echinoderm';
+  if (/jelly|coral|anemone|cnidaria|hydroid/.test(s)) return 'cnidarian';
+  if (/dolphin|whale|seal|sea lion|otter|porpoise|manatee/.test(s)) return 'mammal';
+  if (/gull|tern|pelican|cormorant|booby|albatross|\bbird\b/.test(s)) return 'seabird';
+  return 'fish';
+}
+function parseSpecies(text) {
+  let common = '', sci = '';
+  const pair = text.match(/([A-Z][A-Za-z'’.\- ]{1,40}?)\s*\(\*?([A-Z][a-z]+ [a-z]{2,})\*?\)/);
+  if (pair) {
+    common = pair[1].trim()
+      .replace(/^(likely|possible|uncertain|probable|confirmed)(\sidentification)?:?\s*/i, '')
+      .replace(/^(an?|the)\s+/i, '');
+    sci = pair[2];
+  } else {
+    const it = text.match(/\*([A-Z][a-z]+ [a-z]{2,})\*/);
+    if (it) sci = it[1];
+  }
+  return { commonName: common, scientificName: sci, group: guessGroup(common + ' ' + sci) };
+}
+function attachLogCta(el, text) {
+  if (!authUser || !window.ReefLog || !el) return;
+  const guess = parseSpecies(text || '');
+  if (!guess.scientificName) return;   // only when the reply names an actual species
+  const card = el.querySelector('.card'); if (!card) return;
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'log-cta';
+  btn.textContent = '➕ Add to logbook';
+  btn.onclick = () => sightingForm({ ...guess, date: todayISO(), source: 'identified' });
+  card.appendChild(btn);
+}
+
 renderAuth();   // default to signed-out UI until Firebase reports otherwise
 </script>
 
@@ -1103,7 +1412,7 @@ if (configured) {
   const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
           setPersistence, browserLocalPersistence } =
     await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
-  const { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy } =
+  const { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy } =
     await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
 
   const app = initializeApp(cfg);
@@ -1151,6 +1460,27 @@ if (configured) {
       if (!uid) return;
       await deleteDoc(doc(db, 'users', uid, 'conversations', id));
     },
+  };
+
+  // Naturalist logbook: wildlife sightings + logged trips, per signed-in user.
+  const sub = (name) => collection(db, 'users', uid, name);
+  window.ReefLog = {
+    async addSighting(s) { if (!uid) return null; const r = await addDoc(sub('sightings'), { ...s, createdAt: Date.now() }); return r.id; },
+    async updateSighting(id, s) { if (!uid) return; await updateDoc(doc(db, 'users', uid, 'sightings', id), s); },
+    async listSightings() {
+      if (!uid) return [];
+      const snap = await getDocs(query(sub('sightings'), orderBy('createdAt', 'desc')));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
+    async deleteSighting(id) { if (!uid) return; await deleteDoc(doc(db, 'users', uid, 'sightings', id)); },
+    async addTrip(t) { if (!uid) return null; const r = await addDoc(sub('trips'), { ...t, createdAt: Date.now() }); return r.id; },
+    async updateTrip(id, t) { if (!uid) return; await updateDoc(doc(db, 'users', uid, 'trips', id), t); },
+    async listTrips() {
+      if (!uid) return [];
+      const snap = await getDocs(query(sub('trips'), orderBy('createdAt', 'desc')));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    },
+    async deleteTrip(id) { if (!uid) return; await deleteDoc(doc(db, 'users', uid, 'trips', id)); },
   };
 
   onAuthStateChanged(auth, (user) => {
