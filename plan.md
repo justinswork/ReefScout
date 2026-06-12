@@ -54,11 +54,11 @@ Plain async functions that hit each live API and return normalized Python dicts.
   (wrong year) — fixed by injecting today's date as a post-breakpoint system block;
   (c) model omits species lookup when the question doesn't ask about wildlife.
 
-## Phase 4 — Prompts (`prompts.py` + `prompts/PROMPT_LOG.md`)
-- ☐ System prompt v1: role, scope, tool-use guidance, safety disclaimer, output format.
-- ☐ Test v1, find weaknesses (over-calling tools? skipping verification? unsafe overconfidence?).
-- ☐ System prompt v2: revised with documented rationale (rubric #2, #3).
-- ☐ Keep both versions + a written diff/why in `PROMPT_LOG.md`.
+## Phase 4 — Prompts (`app/prompts.py` + `prompts/PROMPT_LOG.md`) ☑
+- ☑ System prompt V1: role, scope, tool-use guidance, safety disclaimer, output format.
+- ☑ Tested V1 via the eval (7/8): verdict-not-first failure + geocode-retry thrash found.
+- ☑ System prompt V2: absolute first-line verdict rule + bounded geocode retry policy.
+  Re-run: 8/8. Both versions kept in code; full diff + lessons in `PROMPT_LOG.md` (#2, #3).
 
 ## Phase 5 — Frontend (`static/index.html`) ☑ *(pulled ahead of Phases 3–4)*
 Scope upgraded from "minimal chat UI" to a polished ocean-themed **Liquid Glass** design:
@@ -73,15 +73,17 @@ prefers-reduced-motion fallback), translucent blurred-glass surfaces with specul
 - ☑ Cold-start handling: fetch failure renders a friendly "server waking up" message.
 - ☑ Verified in live browser preview: full send→reply flow, trace expansion, badge toggle.
 
-## Phase 6 — Evaluation (`eval/`)
-- ☐ Define "good": for planning answers and for ID answers, with explicit pass criteria.
-- ☐ Structured test cases:
-  - Planning: known spots (e.g. La Jolla) → expect tide/condition tool calls + a clear verdict.
-  - ID: a described species with a known answer + a deliberately out-of-range description that
-    should trigger verification and a hedge.
-  - Tool-selection: assert the model calls the *right* tools for each query type.
-- ☐ Runner that executes cases, records tool traces + outputs, and reports pass/fail + latency.
-- ☐ **Include documented failures** — more credible than all-green (rubric #13).
+## Phase 6 — Evaluation (`eval/`) ☑
+- ☑ "Good" defined as 3 executable dimensions: agentic correctness (right tools per question
+  type, asserted on traces), grounded answers (dates/format/units), honesty at the edges
+  (out-of-range ID challenged, off-topic declined with zero tool spend).
+- ☑ 8 structured cases in `eval/run_eval.py` incl. planning, species, tool-economy (negative
+  assertion), date-grounding regression, plausible ID, out-of-range ID, off-topic, sparse-data.
+- ☑ Declarative check engine (tools_include/exclude, tool_arg_matches, reply regex, any_of);
+  runner records pass/fail + latency + full traces → `eval/RESULTS.md` (committed) +
+  raw JSON (local).
+- ☑ Documented failure preserved: V1 run 7/8 (verdict-not-first) → drove prompt V2 → 8/8.
+  Run history table in RESULTS.md keeps the failure visible (#13, #12, #2).
 
 ## Phase 7 — Deployment (Render)
 - ☐ `render.yaml` (or dashboard config), start command `uvicorn`, `ANTHROPIC_API_KEY` env var.

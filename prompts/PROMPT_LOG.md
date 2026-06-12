@@ -38,4 +38,36 @@ all versions are kept in that file as `SYSTEM_PROMPT_V1`, `V2`, ...
 - Hypotheses 1–3 (ID verification, over-calling, hedging on sparse data) still to be tested —
   that's the Phase 6 eval's job, and V2 will respond to what it finds.
 
-*V2 lands here after eval.*
+---
+
+## V2 — eval-driven revision (2026-06-11)
+
+First full eval run against V1 (`eval/run_eval.py`): **7/8 passed**. Two findings drove V2:
+
+**Finding 1 — verdict wasn't first (failed `planning_basic`).**
+The reply contained the verdict but opened with a preamble line ("Here's your full rundown
+for **La Jolla Cove**…") before it. V1's instruction ("Lead with the answer: a bolded
+verdict line **before details**") was too soft — the model satisfied its letter by putting
+the verdict before the *details*, just not before a greeting.
+> V1: "Lead with the answer: a planning question gets a bolded verdict line before details"
+> V2: "THE VERY FIRST LINE of your answer must be the verdict — no greeting, preamble, or
+> scene-setting before it"
+*Lesson: positional formatting constraints need to be absolute ("first line"), not relative
+("before details").*
+
+**Finding 2 — geocode thrash (passed, but wasteful).**
+Traces showed three geocoding attempts: "La Jolla Cove" → "La Jolla, California" →
+"La Jolla". The retry instinct is good (V1 induced it), but the middle attempt is
+predictably useless — Open-Meteo's geocoder doesn't match comma-qualified forms. V2 bounds
+the behavior:
+> V2 adds: "If geocoding fails, retry ONCE with the simplest form of the name — the bare
+> town or area name, no qualifiers… Never make more than two geocoding attempts."
+*Lesson: when a prompt induces a retry behavior, also specify the retry policy, or the
+model invents its own (and pays for it in latency + tokens).*
+
+**Kept from V1 unchanged:** tool guidance for IDs (reason → verify → location-check) —
+`id_plausible` and `id_out_of_range` both passed, including correctly challenging a
+claimed clownfish sighting in California and counter-proposing the garibaldi. Grounding,
+safety, and scope sections also unchanged (`off_topic` passed with zero tool calls;
+`sparse_data_honesty` passed with the model widening its species search radius unprompted).
+
