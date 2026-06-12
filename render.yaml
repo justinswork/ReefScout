@@ -1,0 +1,33 @@
+# Render Blueprint for ReefScout.
+# In the Render dashboard: New + → Blueprint → connect the justinswork/ReefScout repo.
+# Render reads this file, creates the service, and prompts for the secret env vars below.
+# Full walkthrough: docs/DEPLOY.md
+services:
+  - type: web
+    name: reefscout
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      # Pin the interpreter close to the tested runtime (3.10 locally).
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Agent model (Sonnet — strong tool use, lower cost). Override here if desired.
+      - key: REEFSCOUT_MODEL
+        value: claude-sonnet-4-6
+      # Secrets — set these in the dashboard (sync:false keeps them out of the repo).
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Firebase web config (public values, injected at runtime by /firebase-config.js).
+      - key: FIREBASE_API_KEY
+        sync: false
+      - key: FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_APP_ID
+        sync: false

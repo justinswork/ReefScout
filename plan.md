@@ -111,10 +111,14 @@ prefers-reduced-motion fallback), translucent blurred-glass surfaces with specul
 - ☑ Documented failure preserved: V1 run 7/8 (verdict-not-first) → drove prompt V2 → 8/8.
   Run history table in RESULTS.md keeps the failure visible (#13, #12, #2).
 
-## Phase 7 — Deployment (Render)
-- ☐ `render.yaml` (or dashboard config), start command `uvicorn`, `ANTHROPIC_API_KEY` env var.
-- ☐ Deploy, hit the public URL, run a real interaction end-to-end (rubric #1).
-- ☐ Confirm cold-start wake-up works and the UI signals it.
+## Phase 7 — Deployment (Render) ◐
+- ☑ `render.yaml` blueprint: free web service, `uvicorn app.main:app`, health check `/health`,
+  `PYTHON_VERSION` pinned, secrets (`ANTHROPIC_API_KEY`, `FIREBASE_*`) as dashboard env vars.
+- ☑ Pinned `requirements.txt` to tested versions for reproducible builds.
+- ☑ `docs/DEPLOY.md` step-by-step (blueprint flow + env vars + Firebase authorized domain).
+- ☐ **User action:** create the Render service from the blueprint, set the secret env vars.
+- ☐ Add the Render domain to Firebase Authorized domains (+ key HTTP-referrer allowlist).
+- ☐ Hit the public URL, run a real interaction end-to-end, confirm cold-start wake-up (rubric #1).
 
 ## Phase 8 — Documentation & build log
 - ☐ `README.md`: architecture diagram, component descriptions, setup steps, a full example
