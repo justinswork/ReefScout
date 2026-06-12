@@ -166,18 +166,18 @@ header.glass {
 .badges { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .newchat {
   display: none; align-items: center; gap: 6px;
-  font-family: var(--font); font-size: 0.78rem; font-weight: 600;
-  color: var(--ink); cursor: pointer;
-  padding: 7px 14px 7px 11px; border-radius: 999px;
-  background: linear-gradient(145deg, rgba(34,211,238,0.22), rgba(34,211,238,0.08));
-  border: 1px solid rgba(103,232,249,0.4);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  transition: all .2s ease;
+  font-family: var(--font); font-size: 0.82rem; font-weight: 700;
+  color: #04293f; cursor: pointer;
+  padding: 9px 16px 9px 13px; border-radius: 999px;
+  background: linear-gradient(145deg, rgba(103,232,249,0.95), rgba(13,148,196,0.95));
+  border: 1px solid rgba(180,245,255,0.6);
+  box-shadow: 0 4px 16px rgba(34,211,238,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+  transition: transform .18s ease, box-shadow .18s ease;
 }
 .newchat.on { display: inline-flex; }
-.newchat:hover { background: linear-gradient(145deg, rgba(34,211,238,0.34), rgba(34,211,238,0.14)); transform: translateY(-1px); }
-.newchat svg { width: 14px; height: 14px; }
+.newchat:hover { transform: translateY(-1px) scale(1.03); box-shadow: 0 6px 22px rgba(34,211,238,0.55), inset 0 1px 0 rgba(255,255,255,0.5); }
+.newchat:active { transform: scale(0.97); }
+.newchat svg { width: 15px; height: 15px; }
 .badge {
   font-size: 0.72rem; font-weight: 600;
   padding: 5px 12px; border-radius: 999px;
@@ -452,12 +452,11 @@ main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radiu
       </span>
     </button>
     <div class="badges">
-      <button class="newchat" id="newChat" type="button" title="Start a new conversation">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        New
-      </button>
       <span class="badge demo" id="demoBadge">demo mode</span>
-      <span class="badge" id="statusBadge">live data</span>
+      <button class="newchat" id="newChat" type="button" title="Start a new conversation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        New chat
+      </button>
     </div>
   </header>
 
