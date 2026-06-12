@@ -9,6 +9,13 @@ Legend: ☐ todo · ◐ in progress · ☑ done
 > input) and the agent returns reference photos of candidate species to compare against.
 > Shipped as a 7th MCP tool (`get_species_images`), multimodal `/chat`, UI photo upload, and
 > system prompt V3. Folded into Phases 1–6 below rather than a new phase.
+>
+> **Added mid-build (user request):** conversation history — Firestore + Google sign-in
+> (Firebase Auth), client-side. Backend stays on Render and never touches Firebase. Chat works
+> signed-out (ephemeral); persistence + a history drawer appear when signed in. Setup in
+> `docs/FIREBASE_SETUP.md`; rules in `firestore.rules`. Also fixed two UI bugs found while
+> building it: markdown tables now render (planning answers use them heavily), and the `[hidden]`
+> attribute on icon buttons was being overridden by author CSS.
 
 ---
 

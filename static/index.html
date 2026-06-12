@@ -178,6 +178,87 @@ header.glass {
 .newchat:hover { transform: translateY(-1px) scale(1.03); box-shadow: 0 6px 22px rgba(34,211,238,0.55), inset 0 1px 0 rgba(255,255,255,0.5); }
 .newchat:active { transform: scale(0.97); }
 .newchat svg { width: 15px; height: 15px; }
+
+/* History icon button + auth control */
+.icon-btn {
+  display: inline-grid; place-items: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  color: var(--ink); cursor: pointer;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.16);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  transition: all .2s ease;
+}
+.icon-btn:hover { border-color: rgba(103,232,249,0.45); background: rgba(103,232,249,0.12); }
+.icon-btn svg { width: 18px; height: 18px; }
+.icon-btn[hidden] { display: none; }   /* author display: must restore [hidden] */
+.auth-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font); font-size: 0.78rem; font-weight: 600;
+  color: var(--ink); cursor: pointer;
+  padding: 6px 13px; border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.18);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  transition: all .2s ease;
+  max-width: 180px;
+}
+.auth-btn:hover { border-color: rgba(103,232,249,0.45); background: rgba(103,232,249,0.12); }
+.auth-btn img { width: 22px; height: 22px; border-radius: 50%; }
+.auth-btn .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+
+/* History drawer */
+.drawer-backdrop {
+  position: fixed; inset: 0; z-index: 40;
+  background: rgba(1,10,28,0.5);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  opacity: 0; pointer-events: none; transition: opacity .25s ease;
+}
+.drawer-backdrop.on { opacity: 1; pointer-events: auto; }
+.drawer {
+  position: fixed; z-index: 41; top: 0; left: 0; bottom: 0;
+  width: min(340px, 86vw);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  transform: translateX(-104%);
+  transition: transform .28s cubic-bezier(.2,.9,.3,1);
+}
+.drawer.on { transform: translateX(0); }
+.drawer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.95rem; font-weight: 700; padding: 2px 4px;
+}
+.drawer-close {
+  background: none; border: none; color: var(--ink-dim); cursor: pointer;
+  font-size: 1rem; padding: 4px 8px; border-radius: 8px;
+}
+.drawer-close:hover { color: var(--ink); background: rgba(255,255,255,0.08); }
+.conv-list { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.conv-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 12px; border-radius: 14px; cursor: pointer;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all .18s ease;
+}
+.conv-item:hover { background: rgba(103,232,249,0.1); border-color: rgba(103,232,249,0.35); }
+.conv-item.active { border-color: rgba(103,232,249,0.55); background: rgba(103,232,249,0.13); }
+.conv-item .ci-main { flex: 1 1 auto; min-width: 0; }
+.conv-item .ci-title { font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-item .ci-time { font-size: 0.7rem; color: var(--ink-faint); margin-top: 2px; }
+.conv-item .ci-del {
+  flex: 0 0 auto; background: none; border: none; color: var(--ink-faint);
+  cursor: pointer; font-size: 0.85rem; padding: 4px 6px; border-radius: 8px; opacity: 0;
+}
+.conv-item:hover .ci-del { opacity: 1; }
+.conv-item .ci-del:hover { color: #fda4af; background: rgba(253,164,175,0.12); }
+.conv-empty { color: var(--ink-dim); font-size: 0.85rem; text-align: center; padding: 28px 14px; line-height: 1.5; }
+.conv-empty button {
+  margin-top: 12px; font-family: var(--font); font-size: 0.8rem; font-weight: 600; color: #04293f;
+  background: linear-gradient(145deg, rgba(103,232,249,0.95), rgba(13,148,196,0.95));
+  border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer;
+}
 .badge {
   font-size: 0.72rem; font-weight: 600;
   padding: 5px 12px; border-radius: 999px;
@@ -307,6 +388,19 @@ main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radiu
   font-family: var(--mono); font-size: 0.82em;
   background: rgba(255,255,255,0.1); border-radius: 6px; padding: 1px 6px;
 }
+.card table.md {
+  border-collapse: collapse; width: 100%; margin: 8px 0 10px; font-size: 0.86rem;
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; overflow: hidden;
+}
+.card table.md th, .card table.md td {
+  text-align: left; padding: 7px 11px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.card table.md th { background: rgba(103,232,249,0.12); font-weight: 650; color: #fff; }
+.card table.md tr:last-child td, .card table.md tbody tr:last-child td { border-bottom: none; }
+.card table.md th:last-child, .card table.md td:last-child { border-right: none; }
+.card table.md td:first-child { color: var(--ink); font-weight: 550; }
 .card img.ref {
   display: block; max-width: min(100%, 320px); max-height: 240px;
   border-radius: 14px; margin: 8px 0 2px;
@@ -453,12 +547,26 @@ main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radiu
     </button>
     <div class="badges">
       <span class="badge demo" id="demoBadge">demo mode</span>
+      <button class="icon-btn" id="histBtn" type="button" title="Your conversations" aria-label="Conversation history" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-7 3.3M3 4.5V8h3.5"/><path d="M12 8v4l3 2"/></svg>
+      </button>
       <button class="newchat" id="newChat" type="button" title="Start a new conversation">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         New chat
       </button>
+      <button class="auth-btn" id="authBtn" type="button">Sign in</button>
     </div>
   </header>
+
+  <!-- Conversation history drawer (populated when signed in) -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer glass" id="drawer" aria-hidden="true" aria-label="Conversation history">
+    <div class="drawer-head">
+      <span>Your conversations</span>
+      <button class="drawer-close" id="drawerClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="conv-list" id="convList"></div>
+  </aside>
 
   <main id="chat" aria-live="polite">
     <section class="hero glass" id="hero">
@@ -537,8 +645,23 @@ const send = document.getElementById('send');
 const demoBadge = document.getElementById('demoBadge');
 const newChat = document.getElementById('newChat');
 const brandHome = document.getElementById('brandHome');
-const history = [];   // [{role, content}] — sent with each request
+const histBtn = document.getElementById('histBtn');
+const authBtn = document.getElementById('authBtn');
 let pending = false;
+
+// Conversation state. `current` is the active conversation; null on the home screen.
+// Persisted to Firestore (per signed-in user) via window.ReefStore when signed in;
+// ephemeral otherwise. Messages keep enough to re-render: role, text, agent trace.
+let current = null;
+let authUser = null;
+const genId = () => (crypto.randomUUID ? crypto.randomUUID() : 'c' + Date.now() + Math.random().toString(16).slice(2));
+function ensureConversation() {
+  if (!current) current = { id: genId(), title: '', createdAt: Date.now(), updatedAt: Date.now(), messages: [] };
+}
+async function persist() {
+  if (!authUser || !window.ReefStore || !current || !current.messages.length) return;
+  try { await window.ReefStore.saveConversation(current); } catch (e) { console.warn('save failed', e); }
+}
 
 const TOOL_ICONS = {
   geocode_place: '📍',
@@ -566,6 +689,14 @@ function md(text) {
   h = h.replace(/\*\*([^\n]+?)\*\*/g, '<strong>$1</strong>');
   h = h.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
   h = h.replace(/^#{2,4}\s*(.+)$/gm, '<h4>$1</h4>');
+  // GitHub-style tables: a header row, a |---|---| separator, then body rows.
+  // Runs after bold/italic so emphasis inside cells is already HTML.
+  const cells = row => row.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+  h = h.replace(/(^|\n)(\|[^\n]+\|)\n(\|[ :|-]+\|)\n((?:\|[^\n]*\|\n?)+)/g, (m, pre, header, sep, body) => {
+    const ths = cells(header).map(c => `<th>${c}</th>`).join('');
+    const trs = body.trim().split('\n').map(r => '<tr>' + cells(r).map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
+    return pre + `<table class="md"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+  });
   // group consecutive "- " lines into <ul>
   h = h.replace(/(^|\n)((?:- .*(?:\n|$))+)/g, (m, pre, block) => {
     const items = block.trim().split('\n').map(l => '<li>' + l.replace(/^- /, '') + '</li>').join('');
@@ -573,7 +704,7 @@ function md(text) {
   });
   // paragraphs from remaining double newlines
   return h.split(/\n{2,}/).map(p =>
-    /^<(ul|h4)/.test(p.trim()) ? p : '<p>' + p.replace(/\n/g, '<br>') + '</p>'
+    /^<(ul|h4|table)/.test(p.trim()) ? p : '<p>' + p.replace(/\n/g, '<br>') + '</p>'
   ).join('');
 }
 
@@ -681,17 +812,22 @@ async function sendMessage(text) {
   attachments = [];
   renderPreviews();
 
+  ensureConversation();
   const thumbs = sentImages.map(a =>
     `<img class="user-photo" src="data:${a.media_type};base64,${a.data}" alt="my photo">`).join('');
   addMessage('user', thumbs + md(text));
-  history.push({ role: 'user', content: text });
+
+  // API history = prior turns only (text), before this new user message is appended.
+  const apiHistory = current.messages.map(m => ({ role: m.role, content: m.content }));
+  current.messages.push({ role: 'user', content: text });
+  if (!current.title) current.title = text.slice(0, 60);
   const typing = showTyping();
 
   try {
     const res = await fetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, history: history.slice(0, -1), images: sentImages }),
+      body: JSON.stringify({ message: text, history: apiHistory, images: sentImages }),
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
@@ -699,7 +835,9 @@ async function sendMessage(text) {
     typing.remove();
     demoBadge.classList.toggle('on', !!data.demo);
     addMessage('agent', md(data.reply || '(no reply)'), data.trace);
-    history.push({ role: 'assistant', content: data.reply || '' });
+    current.messages.push({ role: 'assistant', content: data.reply || '', trace: data.trace, demo: !!data.demo });
+    current.updatedAt = Date.now();
+    persist();
   } catch (err) {
     typing.remove();
     addMessage('agent', md(
@@ -731,7 +869,7 @@ document.getElementById('chips').addEventListener('click', e => {
 /* ============================ reset / new conversation ============================ */
 function resetConversation() {
   if (pending) return;                 // don't yank the rug mid-request
-  history.length = 0;
+  current = null;
   attachments = [];
   renderPreviews();
   chat.querySelectorAll('.msg').forEach(m => m.remove());
@@ -740,10 +878,193 @@ function resetConversation() {
   input.value = '';
   autosize();
   send.disabled = true;
+  document.querySelectorAll('.conv-item.active').forEach(el => el.classList.remove('active'));
   input.focus();
 }
 newChat.addEventListener('click', resetConversation);
 brandHome.addEventListener('click', resetConversation);
+
+/* ============================ history (Firestore-backed) ============================ */
+const drawer = document.getElementById('drawer');
+const drawerBackdrop = document.getElementById('drawerBackdrop');
+const convList = document.getElementById('convList');
+
+function relTime(ts) {
+  const s = Math.max(1, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60); if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60); if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24); if (d < 7) return d + 'd ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+/* Replay a stored conversation into the chat view. */
+function renderConversation(conv) {
+  current = conv;
+  chat.querySelectorAll('.msg').forEach(m => m.remove());
+  if (hero) hero.style.display = 'none';
+  newChat.classList.add('on');
+  for (const m of conv.messages) {
+    if (m.role === 'user') addMessage('user', md(m.content));
+    else addMessage('agent', md(m.content), m.trace);
+  }
+  chat.scrollTo({ top: chat.scrollHeight });
+}
+
+async function openConversation(id) {
+  if (pending || !window.ReefStore) return;
+  const conv = await window.ReefStore.loadConversation(id);
+  if (conv) { renderConversation(conv); closeDrawer(); }
+}
+
+async function refreshConvList() {
+  if (!authUser || !window.ReefStore) {
+    convList.innerHTML = `<div class="conv-empty">Sign in with Google to save your conversations and pick up where you left off.
+      <br><button id="emptySignIn" type="button">Sign in</button></div>`;
+    const b = document.getElementById('emptySignIn');
+    if (b) b.addEventListener('click', () => window.ReefAuth && window.ReefAuth.signIn());
+    return;
+  }
+  let items = [];
+  try { items = await window.ReefStore.listConversations(); } catch (e) { console.warn(e); }
+  if (!items.length) { convList.innerHTML = `<div class="conv-empty">No conversations yet. Ask ReefScout something and it'll show up here.</div>`; return; }
+  convList.innerHTML = items.map(it => `
+    <div class="conv-item ${current && current.id === it.id ? 'active' : ''}" data-id="${it.id}">
+      <div class="ci-main">
+        <div class="ci-title">${escapeHtml(it.title || 'Untitled')}</div>
+        <div class="ci-time">${relTime(it.updatedAt)}</div>
+      </div>
+      <button class="ci-del" data-del="${it.id}" type="button" aria-label="Delete conversation">🗑</button>
+    </div>`).join('');
+}
+
+convList.addEventListener('click', async e => {
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    e.stopPropagation();
+    if (window.ReefStore) await window.ReefStore.deleteConversation(del.dataset.del);
+    if (current && current.id === del.dataset.del) resetConversation();
+    refreshConvList();
+    return;
+  }
+  const item = e.target.closest('.conv-item');
+  if (item) openConversation(item.dataset.id);
+});
+
+function openDrawer() { refreshConvList(); drawer.classList.add('on'); drawerBackdrop.classList.add('on'); drawer.setAttribute('aria-hidden', 'false'); }
+function closeDrawer() { drawer.classList.remove('on'); drawerBackdrop.classList.remove('on'); drawer.setAttribute('aria-hidden', 'true'); }
+histBtn.addEventListener('click', openDrawer);
+drawerBackdrop.addEventListener('click', closeDrawer);
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+/* ============================ auth wiring ============================ */
+function renderAuth() {
+  if (authUser) {
+    const name = authUser.displayName || authUser.email || 'Signed in';
+    const photo = authUser.photoURL ? `<img src="${authUser.photoURL}" alt="">` : '';
+    authBtn.innerHTML = `${photo}<span class="who">${escapeHtml(name.split(' ')[0])}</span>`;
+    authBtn.title = 'Sign out (' + name + ')';
+    histBtn.hidden = false;
+  } else {
+    authBtn.innerHTML = 'Sign in';
+    authBtn.title = 'Sign in with Google to save conversations';
+    histBtn.hidden = true;
+  }
+}
+// Called by the Firebase module on every auth state change (and once at startup).
+window.__onAuth = async (user) => {
+  const justSignedIn = !authUser && user;
+  authUser = user;
+  renderAuth();
+  // Persist a conversation started before signing in, then refresh the list.
+  if (justSignedIn) { await persist(); }
+  if (!user) closeDrawer();
+};
+authBtn.addEventListener('click', () => {
+  if (!window.ReefAuth) return;
+  if (authUser) { if (confirm('Sign out of ReefScout?')) window.ReefAuth.signOut(); }
+  else window.ReefAuth.signIn();
+});
+renderAuth();   // default to signed-out UI until Firebase reports otherwise
+</script>
+
+<!-- Firebase web config (NOT secret — ships to the browser). Replace placeholders
+     with your project's values; see docs/FIREBASE_SETUP.md. -->
+<script src="firebase-config.js"></script>
+
+<!-- Auth + Firestore. Degrades gracefully: if config is absent/placeholder, sign-in
+     is disabled and the app runs ephemerally (chat still works, just no saved history). -->
+<script type="module">
+const cfg = window.REEFSCOUT_FIREBASE;
+const configured = !!(cfg && cfg.apiKey && cfg.apiKey !== 'REPLACE_ME' && cfg.projectId);
+
+let _signIn = async () => alert("Saving conversations isn't set up on this deployment yet — chat still works, it just won't be saved.");
+let _signOut = async () => {};
+
+if (configured) {
+  const V = '11.6.1';
+  const { initializeApp } = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-app.js`);
+  const { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+          setPersistence, browserLocalPersistence } =
+    await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
+  const { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy } =
+    await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
+
+  const app = initializeApp(cfg);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+  await setPersistence(auth, browserLocalPersistence).catch(() => {});
+  let uid = null;
+
+  _signIn = () => signInWithPopup(auth, provider).catch(e => {
+    if (e.code !== 'auth/popup-closed-by-user') alert('Sign-in failed: ' + e.message);
+  });
+  _signOut = () => signOut(auth);
+
+  // Firestore rejects `undefined`; keep only serializable fields, drop image bytes
+  // (they'd exceed the 1MB doc limit — agent reference-photo URLs live in `content`).
+  const clean = (messages) => messages.map(m => {
+    const o = { role: m.role, content: m.content };
+    if (m.trace) o.trace = m.trace;
+    if (m.demo) o.demo = true;
+    return o;
+  });
+
+  window.ReefStore = {
+    async saveConversation(c) {
+      if (!uid) return;
+      await setDoc(doc(db, 'users', uid, 'conversations', c.id), {
+        title: c.title || '(untitled)',
+        createdAt: c.createdAt || Date.now(),
+        updatedAt: c.updatedAt || Date.now(),
+        messages: clean(c.messages),
+      });
+    },
+    async listConversations() {
+      if (!uid) return [];
+      const snap = await getDocs(query(collection(db, 'users', uid, 'conversations'), orderBy('updatedAt', 'desc')));
+      return snap.docs.map(d => ({ id: d.id, title: d.data().title, updatedAt: d.data().updatedAt || 0 }));
+    },
+    async loadConversation(id) {
+      if (!uid) return null;
+      const s = await getDoc(doc(db, 'users', uid, 'conversations', id));
+      return s.exists() ? { id, ...s.data() } : null;
+    },
+    async deleteConversation(id) {
+      if (!uid) return;
+      await deleteDoc(doc(db, 'users', uid, 'conversations', id));
+    },
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    uid = user ? user.uid : null;
+    if (window.__onAuth) window.__onAuth(user);
+  });
+}
+
+window.ReefAuth = { signIn: () => _signIn(), signOut: () => _signOut(), configured };
 </script>
 </body>
 </html>

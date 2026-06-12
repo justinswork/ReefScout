@@ -85,10 +85,29 @@ This is structured-input grounding (live APIs + authoritative databases) rather 
 
 ---
 
+## Conversation history (persistence)
+
+Signed-in users get their conversations saved and synced across devices; signed-out use is
+fully functional but ephemeral.
+
+- **Storage:** Cloud **Firestore**, one document per conversation under `users/{uid}/conversations/{id}`.
+- **Identity:** **Firebase Auth** with Google sign-in. Security rules let each user read/write
+  only their own conversations.
+- **Boundary:** the browser talks to Firestore *directly* — the FastAPI agent backend never
+  touches Firebase. Chat works without signing in; persistence is the signed-in bonus, and the
+  app degrades gracefully (no errors) if Firebase isn't configured.
+- **Tradeoff (honest):** history is per Google account, not anonymous-per-device. We don't store
+  the raw bytes of user-uploaded photos (they'd exceed Firestore's 1 MB/doc limit) — reloaded
+  conversations keep all text and the agent's reference-photo URLs. Cross-device sync without a
+  login would require a different model; true server-owned accounts are out of scope.
+
+See `docs/FIREBASE_SETUP.md` for the one-time project setup.
+
 ## Tech stack
 
 - **Backend:** Python + FastAPI
 - **Agent:** Anthropic Claude via the official SDK, with a tool-call loop
 - **Tools:** a FastMCP server (real MCP), consumed by the backend as an MCP client
-- **Frontend:** a single lightweight chat page served by FastAPI
+- **Frontend:** a single lightweight chat page served by FastAPI (vanilla JS, no build step)
+- **Auth + history:** Firebase Auth (Google) + Cloud Firestore, client-side
 - **Deployment:** Render free web-service tier (public URL; sleeps when idle and wakes on load, which the rubric explicitly allows)
