@@ -30,11 +30,30 @@ everything else.
 > `trips` collections. Re-paste and **Publish** the current `firestore.rules`, or logbook saves
 > will fail with `permission-denied`.
 
-## 5. Register a web app and copy the config
+## 5. Register a web app and set the config as env vars
 1. Project settings (⚙️) → **Your apps** → **Web** (`</>`) → register an app (no Hosting needed).
-2. Copy the `firebaseConfig` object it shows you.
-3. Paste the values into [`static/firebase-config.js`](../static/firebase-config.js) — replace
-   `apiKey`, `authDomain`, `projectId`, `appId`. (These are public client values, safe to commit.)
+2. Copy the `firebaseConfig` values it shows you.
+3. Put them in your **environment**, not in source:
+   - **Local:** add to `.env` (gitignored):
+     ```
+     FIREBASE_API_KEY=...
+     FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+     FIREBASE_PROJECT_ID=your-project
+     FIREBASE_APP_ID=...
+     ```
+   - **Render:** add the same four as service environment variables.
+
+   The app serves them to the browser at runtime via the `/firebase-config.js` route
+   (`app/main.py`). They're public client values, but injecting them at runtime keeps the
+   repo free of keys (so secret scanners stay quiet) and lets you swap projects per
+   environment.
+
+### 5b. Restrict the API key (recommended)
+The web API key is public by design, but you should still lock it down so it can't be abused:
+APIs & Services → **Credentials** → your key → set **Application restrictions** to *HTTP
+referrers* (add your Render domain and `http://localhost:8000/*`) and **API restrictions** to
+just the Firebase APIs (Identity Toolkit, Token Service, Cloud Firestore). With this in place,
+an exposed key is harmless.
 
 ## 6. Authorize your domains
 Authentication → **Settings** → **Authorized domains** → add:

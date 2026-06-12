@@ -14,6 +14,10 @@ env/
 .env
 .env.local
 
+# Firebase web config is injected at runtime from env vars (see app/main.py:/firebase-config.js).
+# Never commit a generated one.
+static/firebase-config.js
+
 # Local runtime artifacts
 *.log
 .cache/

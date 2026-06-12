@@ -17,11 +17,13 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 load_dotenv()  # before anything reads ANTHROPIC_API_KEY
 
+import json  # noqa: E402
 import os  # noqa: E402
 
 from app.agent import ReefScoutAgent  # noqa: E402
@@ -177,6 +179,27 @@ def _demo_response() -> dict:
         ),
         "trace": [],
     }
+
+
+@app.get("/firebase-config.js")
+async def firebase_config_js() -> Response:
+    """Serve the Firebase web config from environment variables (FIREBASE_*).
+
+    The config is public by design (it ships to the browser), but we inject it at
+    runtime rather than committing it — so the repo carries no key, and access is
+    governed by Firestore rules + Authorized domains + key restrictions. If the env
+    vars are absent the app runs without auth/history (graceful).
+
+    Defined before the static mount so it takes precedence over any local file.
+    """
+    cfg = {
+        "apiKey": os.environ.get("FIREBASE_API_KEY", ""),
+        "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN", ""),
+        "projectId": os.environ.get("FIREBASE_PROJECT_ID", ""),
+        "appId": os.environ.get("FIREBASE_APP_ID", ""),
+    }
+    body = f"window.REEFSCOUT_FIREBASE = {json.dumps(cfg)};\n"
+    return Response(content=body, media_type="application/javascript", headers={"Cache-Control": "no-store"})
 
 
 # Serve the UI. `html=True` makes / return static/index.html.
