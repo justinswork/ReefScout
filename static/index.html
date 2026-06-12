@@ -1008,7 +1008,7 @@ async function sendMessage(text) {
     typing.remove();
     demoBadge.classList.toggle('on', !!data.demo);
     const agentEl = addMessage('agent', md(data.reply || '(no reply)'), data.trace);
-    attachLogCta(agentEl, data.reply || '');
+    attachLogCta(agentEl, data.reply || '', data.trace);
     current.messages.push({ role: 'assistant', content: data.reply || '', trace: data.trace, demo: !!data.demo });
     current.updatedAt = Date.now();
     persist();
@@ -1082,7 +1082,7 @@ function renderConversation(conv) {
   newChat.classList.add('on');
   for (const m of conv.messages) {
     if (m.role === 'user') addMessage('user', md(m.content));
-    else { const el = addMessage('agent', md(m.content), m.trace); attachLogCta(el, m.content); }
+    else { const el = addMessage('agent', md(m.content), m.trace); attachLogCta(el, m.content, m.trace); }
   }
   chat.scrollTo({ top: chat.scrollHeight });
 }
@@ -1167,7 +1167,14 @@ window.__onAuth = async (user) => {
   authUser = user;
   renderAuth();
   // Persist a conversation started before signing in, then refresh the list.
-  if (justSignedIn) { await persist(); }
+  if (justSignedIn) {
+    await persist();
+    // Resume an "Add to logbook" the user tapped before signing in.
+    if (window.__pendingSighting && typeof sightingForm === 'function') {
+      const p = window.__pendingSighting; window.__pendingSighting = null;
+      sightingForm(p);
+    }
+  }
   if (!user) { closeDrawer(); closeUserMenu(); closeLogbook(); }
 };
 
@@ -1382,29 +1389,49 @@ function guessGroup(s) {
   if (/gull|tern|pelican|cormorant|booby|albatross|\bbird\b/.test(s)) return 'seabird';
   return 'fish';
 }
+function cleanCommon(raw) {
+  // The bold lead is usually a confidence phrase + the name, e.g.
+  // "Almost certainly a Garibaldi" / "Likely identification: Garibaldi" / "Probably a Moon Jelly".
+  // Peel the cue off the front; what's left is the species' common name.
+  let s = (raw || '').replace(/\s+/g, ' ').trim();
+  s = s.replace(/^.*:\s*/, '');                                   // "...identification: "
+  s = s.replace(/.*\b(?:a|an|the)\s+/i, '');                      // up to the last article ("certainly a ")
+  s = s.replace(/^(likely|possibl[ey]|probabl[ey]|uncertain|confirmed|definitely|certainly|most|almost)\s+/i, '');
+  return s.trim();
+}
 function parseSpecies(text) {
   let common = '', sci = '';
-  const pair = text.match(/([A-Z][A-Za-z'’.\- ]{1,40}?)\s*\(\*?([A-Z][a-z]+ [a-z]{2,})\*?\)/);
-  if (pair) {
-    common = pair[1].trim()
-      .replace(/^(likely|possible|uncertain|probable|confirmed)(\sidentification)?:?\s*/i, '')
-      .replace(/^(an?|the)\s+/i, '');
-    sci = pair[2];
-  } else {
+  const pair = text.match(/([A-Z][A-Za-z'’.\- ]{1,50}?)\s*\(\*?([A-Z][a-z]+ [a-z]{2,})\*?\)/);
+  if (pair) { common = cleanCommon(pair[1]); sci = pair[2]; }
+  else {
     const it = text.match(/\*([A-Z][a-z]+ [a-z]{2,})\*/);
     if (it) sci = it[1];
   }
   return { commonName: common, scientificName: sci, group: guessGroup(common + ' ' + sci) };
 }
-function attachLogCta(el, text) {
-  if (!authUser || !window.ReefLog || !el) return;
+function placeFromTrace(trace) {
+  // The place ReefScout actually geocoded is the most reliable place name to pre-fill.
+  if (!Array.isArray(trace)) return '';
+  const geos = trace.filter(t => t.tool === 'geocode_place' && t.args && t.args.place);
+  return geos.length ? geos[geos.length - 1].args.place : '';
+}
+function attachLogCta(el, text, trace) {
+  // Only worth offering when Firebase is set up (so the logbook actually exists) and the
+  // reply names a real species (has a scientific binomial). Works signed-out: clicking
+  // signs the user in and then opens the pre-filled dialog (see __onAuth resume).
+  if (!el || !window.ReefAuth || !window.ReefAuth.configured) return;
   const guess = parseSpecies(text || '');
-  if (!guess.scientificName) return;   // only when the reply names an actual species
+  if (!guess.scientificName) return;
   const card = el.querySelector('.card'); if (!card) return;
+  const prefill = { ...guess, place: placeFromTrace(trace), date: todayISO(), source: 'identified' };
+  const label = guess.commonName || guess.scientificName || 'this';
   const btn = document.createElement('button');
   btn.type = 'button'; btn.className = 'log-cta';
-  btn.textContent = '➕ Add to logbook';
-  btn.onclick = () => sightingForm({ ...guess, date: todayISO(), source: 'identified' });
+  btn.textContent = `＋ Add ${label} to logbook`;
+  btn.onclick = () => {
+    if (authUser) { sightingForm(prefill); }
+    else { window.__pendingSighting = prefill; window.ReefAuth.signIn(); }
+  };
   card.appendChild(btn);
 }
 
