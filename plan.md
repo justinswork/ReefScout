@@ -122,15 +122,17 @@ prefers-reduced-motion fallback), translucent blurred-glass surfaces with specul
 - ☐ **User action remaining:** add `reefscout.onrender.com` to Firebase Authorized domains so
   Google sign-in (history + logbook) works in production; restrict the API key's referrers.
 
-## Phase 8 — Documentation & build log
-- ☐ `README.md`: architecture diagram, component descriptions, setup steps, a full example
-  interaction trace, and an honest "what it does / does not do" section (rubric #14, #11).
-- ☐ `BUILD_LOG.md`: experiments, dead ends, decisions, and the prompt-iteration story (#9, #2).
-- ☐ Changelog section for **draft → final** so instructor feedback is visibly addressed (#12).
+## Phase 8 — Documentation & build log ☑
+- ☑ `README.md`: architecture diagram, component table, MCP-tools table, the "why it's agentic"
+  litmus test, a full worked-example interaction (real trace + reply), setup + deploy, project
+  structure, "what it does / does not do," and the rubric checklist (#14, #11).
+- ☑ `BUILD_LOG.md`: concept pivots, key decisions + rationale, what didn't work (and fixes),
+  user-driven features, and deferred items (#9). Prompt story in `prompts/PROMPT_LOG.md` (#2).
+- ☐ Changelog section for **draft → final** — pending instructor feedback (Phase 9, #12).
 
 ## Phase 9 — Iteration pass
-- ☐ Run the eval, fix the worst failures, re-run, record the before/after.
-- ☐ Submit draft → capture instructor feedback → address it → note each change.
+- ☑ Run the eval, fix the worst failures, re-run, record the before/after (v1 7/8 → v2 8/8).
+- ☐ Submit draft → capture instructor feedback → address it → note each change (after submission).
 
 ---
 
