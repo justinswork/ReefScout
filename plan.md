@@ -130,9 +130,12 @@ prefers-reduced-motion fallback), translucent blurred-glass surfaces with specul
   user-driven features, and deferred items (#9). Prompt story in `prompts/PROMPT_LOG.md` (#2).
 - ☐ Changelog section for **draft → final** — pending instructor feedback (Phase 9, #12).
 
-## Phase 9 — Iteration pass
+## Phase 9 — Iteration pass ☑
 - ☑ Run the eval, fix the worst failures, re-run, record the before/after (v1 7/8 → v2 8/8).
-- ☐ Submit draft → capture instructor feedback → address it → note each change (after submission).
+- ☑ Instructor draft feedback received and addressed: flagged build log + full README (both
+  already completed Phase 8), and "complete example showing the full tool chain" → added a second
+  worked example (identification w/ verification) so all 7 tools are demonstrated. Changelog in
+  `BUILD_LOG.md` § Draft → final.
 
 ---
 

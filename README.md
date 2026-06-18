@@ -123,6 +123,34 @@ get_species_images("Octopus bimaculoides")   ┘
 Note the agentic moves: it **recovered from a failed geocode** on its own, **chained** four data
 tools, and **fetched a photo per highlight species** without being told to.
 
+### A second interaction — identification with verification
+
+**User:** *"I think I saw a clownfish like Nemo while snorkeling at La Jolla yesterday. Cool right?"*
+
+**Tool calls:**
+
+```
+geocode_place({"place": "La Jolla"})
+search_marine_taxa({"query": "clownfish"})                      ← reason to a candidate, look it up
+get_species_nearby(32.847, -117.274, iconic_taxa="Actinopterygii")  ← does it occur HERE?
+get_species_detail({"aphia_id": 212783})                        ← range / environment check
+get_species_images("Hypsypops rubicundus")                      ← photo of the real candidate
+```
+
+**Reply (trimmed):**
+
+> **Unlikely — no clownfish live in La Jolla waters.** Clownfish (*Amphiprion*) are tropical
+> Indo-Pacific reef fish; La Jolla is a temperate California kelp forest, and there are **zero
+> iNaturalist observations** of clownfish near it.
+>
+> The much more likely culprit: the **Garibaldi** *(Hypsypops rubicundus)* — La Jolla's #2
+> most-observed fish, a big brilliant-orange kelp-forest fish. *(+ photo & attribution)* Does that
+> match what you saw — solid orange, no white stripes?
+
+This is the distinctive behavior: the model **didn't just accept the ID** — it checked the claim
+against where the species actually occurs, **refuted it with evidence**, and proposed a
+location-appropriate alternative. Across the two examples, all 7 MCP tools are exercised.
+
 ---
 
 ## Evaluation
@@ -208,7 +236,7 @@ Status of each project requirement (2 pts each). ✅ met · ◐ in progress.
 | 9 | Build log | ✅ | [BUILD_LOG.md](BUILD_LOG.md) — concept pivots, decisions, dead ends, and bugs — plus [prompts/PROMPT_LOG.md](prompts/PROMPT_LOG.md). |
 | 10 | Originality | ✅ | Marine field companion with **occurrence-based ID verification**, photo ID, and a naturalist **logbook** — not a generic chatbot. |
 | 11 | Intellectual ownership | ✅ | Architecture and trade-offs documented in [overview.md](overview.md), [BUILD_LOG.md](BUILD_LOG.md), and commit messages. |
-| 12 | Iteration | ✅ | Eval-driven: prompt v1 (7/8) → v2 (8/8), plus documented bug fixes. Draft→final instructor-feedback pass pending. |
+| 12 | Iteration | ✅ | Eval-driven (prompt v1 7/8 → v2 8/8 + documented bug fixes) **and** instructor draft feedback addressed — see [BUILD_LOG.md](BUILD_LOG.md) § Draft → final. |
 | 13 | Evaluation | ✅ | 9 structured cases, **9/9**, with a documented earlier failure — [eval/run_eval.py](eval/run_eval.py), [eval/RESULTS.md](eval/RESULTS.md). |
 | 14 | Documentation | ✅ | This README (architecture, setup, worked example) + [overview.md](overview.md) + [docs/](docs/). |
 

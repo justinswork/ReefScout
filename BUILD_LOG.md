@@ -109,6 +109,27 @@ FastAPI service never holds Firebase credentials, and the agent never depends on
 
 ---
 
+## Draft → final: instructor feedback
+
+Feedback on the draft (paraphrased): *real FastMCP server with 7 tools, a correct
+tool_use → dispatch → feed-back agent loop, the v1→v2→v3 prompt log, and key-less live-API
+grounding all hit the mark; commit history (24) is solid. The two things left are the ones my
+own status checklist already flagged — **finish the build log** (worth 2 pts) and **write the
+full README** so someone outside the class could clone, deploy, and understand every component,
+including a **complete example interaction showing the full tool chain.***
+
+How the final addresses it:
+
+| Feedback | Addressed in the final |
+|---|---|
+| Build log incomplete | This file (`BUILD_LOG.md`) — concept pivots, decisions + rationale, what didn't work and the fixes, deferred items. Prompt-specific story in `PROMPT_LOG.md`. |
+| Full README pending | `README.md` rewritten as a standalone guide: architecture diagram, a component table explaining **every** file, local-setup + deploy steps (`docs/DEPLOY.md`), project structure, scope honesty, and the rubric checklist. |
+| Complete example interaction showing the full tool chain | README now has **two** real, end-to-end interactions: a planning trip (geocode→conditions→tides→species→photos) and an identification with verification (geocode→search_marine_taxa→species_nearby→species_detail→photo). Together they exercise **all 7 tools**, with the live tool trace shown. |
+
+The flagged items had actually been completed in the commit just before this feedback arrived; the
+feedback then drove one concrete strengthening — adding the **second worked example** so the README
+demonstrates the *complete* tool chain rather than a single planning flow.
+
 ## How to verify the claims here
 - Live app: <https://reefscout.onrender.com> (`/health` reports whether the agent is live).
 - `pytest` — 14 integration tests (data layer, MCP server, API).
