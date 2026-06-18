@@ -11,6 +11,8 @@ are exposed through a **custom MCP server** and backed by **free, no-API-key** l
 ### ▶️ Live app: **https://reefscout.onrender.com**
 Free tier — if it's been idle it may take ~30–60 s to wake on the first request.
 
+<p align="center"><img src="images/HomePage.png" alt="ReefScout home screen" width="640"></p>
+
 ---
 
 ## What it does
@@ -24,6 +26,28 @@ Free tier — if it's been idle it may take ~30–60 s to wake on the first requ
 - **Keep a logbook.** Sign in with Google to save your conversations and build a **life-list** of
   sightings (auto-enriched with scientific name, taxon group, conservation status, and a photo)
   plus a trip log. One tap from any identification adds it to your logbook.
+
+---
+
+## 📸 Built for images — because words can't describe a fish
+
+Identifying marine life from text alone is genuinely hard: *"small, mostly blue with some green"*
+fits hundreds of species. So ReefScout is **multimodal in both directions** — which is unusual for
+a chat app, and the heart of why it works for ID:
+
+- **You send a photo.** Snap the creature and attach it; the vision model identifies from the
+  *actual image* — color, pattern, fin shape, habitat in frame — not a vague description. (Photos
+  are downscaled in the browser before upload to keep it fast and cheap.)
+- **ReefScout sends photos back.** For every candidate species it proposes, it fetches a real
+  reference photo (iNaturalist, with photographer attribution) so you can **eyeball the match** —
+  *"does it look like this?"* — instead of trusting a name you can't picture.
+
+<p align="center"><img src="images/ExampleConversation.png" alt="Identifying a blue-green fish seen off Hawaii, with reference photos for each candidate" width="560"></p>
+
+*Above: a text description of a blue-green fish seen off Hawaii. ReefScout proposes the **Saddle
+Wrasse** *(Thalassoma duperrey)* — likely — and the **Redlip Parrotfish** *(Scarus rubroviolaceus)*
+— possible, each with a reference photo to compare against. That photo-in / photos-out loop is
+exactly how a field guide is used, and it's why ReefScout beats a text-only bot at this task.*
 
 ---
 
