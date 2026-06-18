@@ -79,6 +79,24 @@ stop**. Remove the LLM and replace it with a lookup table and the behavior colla
 the decision to verify an ID against location, and the synthesis all live in the model's responses.
 Our code only provides the tools and the loop.
 
+### Persistence — history & logbook (signed-in)
+
+This layer is **client-side and fully decoupled** from the agent: the browser talks to Firebase
+directly, so the FastAPI/agent service holds no Firebase credentials.
+
+- **Auth + data:** Firebase Auth (Google sign-in) + Cloud Firestore. Each user reads/writes only
+  their own `users/{uid}/conversations`, `/sightings`, and `/trips`, enforced by
+  [`firestore.rules`](firestore.rules). Signed-out use works but is ephemeral.
+- **Config injection:** the public Firebase web config is served at runtime by
+  `GET /firebase-config.js` from `FIREBASE_*` env vars — never committed to the repo.
+- **Logbook enrichment:** the "log a sighting" form asks only for name/place/date/notes;
+  `GET /species/resolve` then fills in the scientific name, taxon group, conservation status, and a
+  reference photo from WoRMS + iNaturalist (no LLM, no key). A one-tap **"Add to logbook"** button
+  on any identification pre-fills it from the chat.
+- **Photos:** each sighting gets a default reference photo, or the user's own upload — downscaled
+  client-side and stored as a compact image inside the sighting's Firestore doc (one per doc, under
+  the 1 MB limit), so no Firebase Storage (and no billing upgrade) is required.
+
 ---
 
 ## A complete interaction (real output, lightly trimmed)
