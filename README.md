@@ -8,6 +8,10 @@ ReefScout is an **agentic** application: a Claude model decides which tools to c
 based on the results, and verifies its own answers against authoritative marine data. The tools
 are exposed through a **custom MCP server** and backed by **free, no-API-key** live ocean data.
 
+**Who it's for:** casual-to-intermediate snorkelers, tidepoolers, and shore divers planning an
+outing and logging what they see. &nbsp;·&nbsp; 📄 **Submission write-up:** [WRITEUP.md](WRITEUP.md)
+answers the six required questions in one place.
+
 ### ▶️ Live app: **https://reefscout.onrender.com**
 Free tier — if it's been idle it may take ~30–60 s to wake on the first request.
 
@@ -258,6 +262,10 @@ overview.md · rubric.md · plan.md · BUILD_LOG.md
   US coasts (NOAA); elsewhere it says so.
 - User-uploaded logbook photos are stored as a single downscaled image per Firestore doc (no
   Firebase Storage); originals are not retained full-resolution.
+
+**Known failure modes + what I'd fix with more time** are written up in
+[WRITEUP.md § 6](WRITEUP.md#6-what-breaks-and-what-id-fix-with-more-time) (e.g. iNaturalist's lack
+of a strict marine filter, US-only tides, in-memory rate limiting).
 
 ---
 
