@@ -12,11 +12,12 @@ frontend remains reviewable without a key. The deployed app always has a key.
 
 from __future__ import annotations
 
+from collections import deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -24,9 +25,13 @@ from pydantic import BaseModel, Field
 load_dotenv()  # before anything reads ANTHROPIC_API_KEY
 
 import json  # noqa: E402
+import logging  # noqa: E402
 import os  # noqa: E402
+import time  # noqa: E402
 
 from app.agent import ReefScoutAgent  # noqa: E402
+
+logger = logging.getLogger("reefscout")
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -52,9 +57,67 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="ReefScout", version="0.2.0", lifespan=lifespan)
 
 
+# --- Abuse mitigation: in-memory rate limiting ---------------------------------------
+# /chat spends a real (personal) Anthropic key on every call, so an unauthenticated,
+# unthrottled public endpoint is a denial-of-wallet risk. These process-local counters
+# are a backstop (Render's free tier is a single instance, so process-local state works).
+# The HARD cost ceiling is the monthly spend limit set on the API key itself — see
+# docs/SECURITY.md. All limits are tunable via env vars.
+_CHAT_PER_IP_PER_MIN = int(os.environ.get("REEFSCOUT_CHAT_PER_IP_PER_MIN", "6"))
+_CHAT_PER_IP_PER_HOUR = int(os.environ.get("REEFSCOUT_CHAT_PER_IP_PER_HOUR", "40"))
+_CHAT_GLOBAL_PER_DAY = int(os.environ.get("REEFSCOUT_CHAT_GLOBAL_PER_DAY", "300"))
+_RESOLVE_PER_IP_PER_MIN = int(os.environ.get("REEFSCOUT_RESOLVE_PER_IP_PER_MIN", "30"))
+_RESOLVE_PER_IP_PER_HOUR = int(os.environ.get("REEFSCOUT_RESOLVE_PER_IP_PER_HOUR", "300"))
+
+_ip_buckets: dict[str, dict[str, deque]] = {}
+_chat_global: deque = deque()
+
+
+def _client_ip(request: Request) -> str:
+    xff = request.headers.get("x-forwarded-for")  # Render runs behind a proxy
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _prune(dq: deque, window: float, now: float) -> None:
+    while dq and now - dq[0] > window:
+        dq.popleft()
+
+
+def _per_ip_ok(bucket: str, ip: str, per_min: int, per_hour: int, now: float) -> bool:
+    ips = _ip_buckets.setdefault(bucket, {})
+    if len(ips) > 5000:  # bound memory: drop IPs idle > 1h
+        for k in [k for k, d in ips.items() if not d or now - d[-1] > 3600]:
+            ips.pop(k, None)
+    dq = ips.setdefault(ip, deque())
+    _prune(dq, 3600, now)
+    if len(dq) >= per_hour:
+        return False
+    if sum(1 for t in dq if now - t <= 60) >= per_min:
+        return False
+    dq.append(now)
+    return True
+
+
+def rate_limit_chat(request: Request) -> None:
+    now = time.time()
+    _prune(_chat_global, 86400, now)
+    if len(_chat_global) >= _CHAT_GLOBAL_PER_DAY:
+        raise HTTPException(status_code=429, detail="ReefScout has reached its daily request limit. Please try again tomorrow.")
+    if not _per_ip_ok("chat", _client_ip(request), _CHAT_PER_IP_PER_MIN, _CHAT_PER_IP_PER_HOUR, now):
+        raise HTTPException(status_code=429, detail="Too many requests — please wait a minute and try again.")
+    _chat_global.append(now)
+
+
+def rate_limit_resolve(request: Request) -> None:
+    if not _per_ip_ok("resolve", _client_ip(request), _RESOLVE_PER_IP_PER_MIN, _RESOLVE_PER_IP_PER_HOUR, time.time()):
+        raise HTTPException(status_code=429, detail="Too many requests — please slow down.")
+
+
 class ChatTurn(BaseModel):
     role: str = Field(pattern="^(user|assistant)$")
-    content: str
+    content: str = Field(max_length=8000)  # bound prior-turn size (cost control)
 
 
 class ChatImage(BaseModel):
@@ -65,7 +128,7 @@ class ChatImage(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
-    history: list[ChatTurn] = []
+    history: list[ChatTurn] = Field(default=[], max_length=50)  # bound parse size; handler keeps last 12
     images: list[ChatImage] = Field(default=[], max_length=3)
 
 
@@ -103,7 +166,7 @@ def _derive_group(classification: dict) -> str:
 
 
 @app.get("/species/resolve")
-async def resolve_species(name: str) -> dict:
+async def resolve_species(name: str, _: None = Depends(rate_limit_resolve)) -> dict:
     """Look up authoritative details for a species the user logged by name.
 
     Used by the logbook so the user only types a name — scientific name, taxon group,
@@ -149,7 +212,7 @@ async def resolve_species(name: str) -> dict:
 
 
 @app.post("/chat")
-async def chat(req: ChatRequest) -> dict:
+async def chat(req: ChatRequest, _: None = Depends(rate_limit_chat)) -> dict:
     if agent is None:
         return _demo_response()
 
@@ -158,10 +221,12 @@ async def chat(req: ChatRequest) -> dict:
     images = [i.model_dump() for i in req.images] or None
     try:
         result = await agent.run(req.message, history, images)
-    except Exception as exc:  # noqa: BLE001 - degrade to a readable chat error
+    except Exception:  # noqa: BLE001 - degrade to a readable chat error
+        # Log the detail server-side; return a generic message (don't leak internals).
+        logger.exception("agent.run failed")
         return {
             "reply": ("**Something went wrong on my end.** The live data sources and the "
-                      f"model are usually quick to recover — please try again.\n\n`{exc}`"),
+                      "model are usually quick to recover — please try again in a moment."),
             "trace": [],
             "error": True,
         }

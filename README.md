@@ -261,6 +261,15 @@ overview.md · rubric.md · plan.md · BUILD_LOG.md
 
 ---
 
+## Security
+
+ReefScout is a public, unauthenticated app whose `/chat` endpoint spends a real API key, so the
+main risk is **resource abuse, not data theft**. Mitigations in place: per-IP + global **rate
+limiting** on `/chat` and `/species/resolve`, bounded request sizes, generic (non-leaking) error
+messages, per-user Firestore rules with a deny-all default, HTML-escaped output, and no
+server-side fetching of user-supplied URLs. The hard cost ceiling is a **monthly spend limit set
+on the API key**. Full audit, findings, and the operational checklist: [docs/SECURITY.md](docs/SECURITY.md).
+
 ## Rubric checklist
 
 Status of each project requirement (2 pts each). ✅ met · ◐ in progress.

@@ -1019,6 +1019,13 @@ async function sendMessage(text) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text, history: apiHistory, images: sentImages }),
     });
+    if (res.status === 429) {   // rate limited — show the server's friendly reason
+      typing.remove();
+      let detail = 'Too many requests — give it a minute and try again.';
+      try { detail = (await res.json()).detail || detail; } catch {}
+      addMessage('agent', md('🐠 **' + detail + '**'));
+      return;
+    }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
 
