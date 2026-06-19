@@ -1,110 +1,126 @@
-# ReefScout — Project 3 write-up
+# ReefScout: Project 3 write-up
 
 - **Live app:** https://reefscout.onrender.com
 - **Repo:** https://github.com/justinswork/ReefScout
-- **Deep docs:** [README.md](README.md) (architecture, setup, examples) · [BUILD_LOG.md](BUILD_LOG.md) (process) · [prompts/PROMPT_LOG.md](prompts/PROMPT_LOG.md) (prompt iteration) · [eval/RESULTS.md](eval/RESULTS.md) (evaluation) · [docs/SECURITY.md](docs/SECURITY.md) (security audit)
+- **Deeper docs:** [README.md](README.md) for architecture, setup, and examples; [BUILD_LOG.md](BUILD_LOG.md) for the process; [prompts/PROMPT_LOG.md](prompts/PROMPT_LOG.md) for prompt iteration; [eval/RESULTS.md](eval/RESULTS.md) for evaluation; [docs/SECURITY.md](docs/SECURITY.md) for the security audit.
 
-This write-up answers the six required questions directly; the linked docs go deeper.
+This write-up answers the six required questions directly. The linked docs go into more depth.
 
 ---
 
 ## 1. What problem it solves, and who it's for
 
-Snorkelers, tidepoolers, and shore divers face two recurring, annoying questions, and the web
-answers them badly:
+Snorkelers, tidepoolers, and shore divers keep running into two questions that the web answers
+poorly. The first is "is this spot worth visiting, and when?" Today you have to stitch that answer
+together yourself from a marine forecast site, a separate tide table, and a wildlife database, each
+in its own units and format. The second is "what did I just see?" That one is even harder, because
+text barely works for identifying marine life. A description like "small, mostly blue with some
+green" fits hundreds of species, so you really can't name a fish by writing words about it.
 
-1. **"Is it worth going to this spot, and when?"** — the answer is scattered across a marine
-   forecast site, a tide table, and a wildlife database, in different units and formats.
-2. **"What did I just see?"** — and here text fails completely. *"Small, mostly blue with some
-   green"* matches hundreds of species; you can't identify a fish by describing it in words.
+ReefScout is built for the casual-to-intermediate snorkeler, tidepooler, or shore naturalist who
+just wants one trustworthy companion for a coastal outing. It gives a clear go or no-go call based
+on real conditions, tells you what wildlife you're likely to meet, identifies what you saw from a
+photo or description, and keeps a personal logbook (a life-list plus a trip log) so you can
+remember it later. It is meant to be informational, and it is not a safety authority.
 
-**ReefScout** is for the **casual-to-intermediate snorkeler / tidepooler / shore naturalist** who
-wants a single, trustworthy companion for a coastal outing: a go/no-go call with real conditions,
-the wildlife they're likely to meet, photo-based identification of what they saw, and a personal
-**logbook** (life-list + trips) to remember it. It is informational, not a safety authority.
+## 2. System architecture (models, tools, and how they connect)
 
-## 2. System architecture (models, tools, how they connect)
+There is one model and one agent. It runs on Anthropic's Claude (`claude-sonnet-4-6`), which I
+chose because it handles tool use well while costing less than Opus, and the deployed app runs on
+my personal API key.
 
-- **Model:** a single agent — Anthropic **Claude (`claude-sonnet-4-6`)** — chosen for strong tool
-  use at lower cost than Opus (it runs on a personal API key).
-- **Tools:** a **custom MCP server** ([`app/mcp_server.py`](app/mcp_server.py), FastMCP) exposing
-  **7 tools** — `geocode_place`, `get_marine_conditions`, `get_tides`, `get_species_nearby`,
-  `get_species_images`, `search_marine_taxa`, `get_species_detail` — each backed by a **free,
-  no-API-key** live source ([`app/ocean_data.py`](app/ocean_data.py)): Open-Meteo (geocoding +
-  marine), NOAA CO-OPS (tides), iNaturalist (sightings + photos), WoRMS (taxonomy + conservation).
-- **How they connect:** Browser (single-file UI) → FastAPI `/chat` → the **agent loop**
-  ([`app/agent.py`](app/agent.py)) → Anthropic API; when the model emits `tool_use`, the loop
-  dispatches over **MCP (stdio)** to the tool server and feeds the result back. Persistence
-  (history + logbook) is **client-side Firebase** (Auth + Firestore), decoupled from the agent —
-  the backend never holds Firebase credentials. Full diagram + component table in the
-  [README](README.md#architecture).
+The tools live in a custom MCP server ([`app/mcp_server.py`](app/mcp_server.py), built with
+FastMCP) that exposes seven tools: `geocode_place`, `get_marine_conditions`, `get_tides`,
+`get_species_nearby`, `get_species_images`, `search_marine_taxa`, and `get_species_detail`. Each
+one wraps a free, no-API-key live source in [`app/ocean_data.py`](app/ocean_data.py): Open-Meteo
+for geocoding and marine conditions, NOAA CO-OPS for tides, iNaturalist for sightings and photos,
+and WoRMS for taxonomy and conservation status.
+
+They connect like this. The browser (a single-file UI) posts to the FastAPI `/chat` route, which
+runs the agent loop in [`app/agent.py`](app/agent.py). The loop calls the Anthropic API, and
+whenever the model asks to use a tool, the loop dispatches that call over MCP (stdio) to the tool
+server and feeds the result back. Conversation history and the logbook are handled separately by
+Firebase (Auth and Firestore) directly from the browser, so the agent backend never holds any
+Firebase credentials. There's a full diagram and a component table in the
+[README](README.md#architecture).
 
 ## 3. What is agentic about it
 
-The model — not Python — drives. The loop in [`app/agent.py`](app/agent.py) reads `tool_use`
-blocks, dispatches them, feeds results back, and repeats **until the model decides to stop**. The
-model chooses *which* tools to call, *in what order*, *whether to call any at all*, and *when it's
-done*. No `if/else` routing decides the tool chain. Observed autonomous behavior (real traces in
-the [README](README.md#a-complete-interaction-real-output-lightly-trimmed)):
+The model is in charge, not my Python. The loop in [`app/agent.py`](app/agent.py) reads the
+model's `tool_use` blocks, runs those tools, hands the results back, and repeats until the model
+decides it's finished. The model picks which tools to call, what order to call them in, whether to
+call any at all, and when to stop. Nothing in my code uses an `if/else` to decide the tool chain.
 
-- **Recovers from failure:** a failed `geocode_place("La Jolla Cove")` → retried `"La Jolla"` on its own.
-- **Skips unneeded tools:** a waves-only question never calls the species tool (asserted in the eval).
-- **Multi-step verification:** a claimed *clownfish at La Jolla* → it searched taxonomy, checked
-  local occurrence, **refuted the ID with evidence**, and proposed the garibaldi instead.
+You can see this in the real traces in the
+[README](README.md#a-complete-interaction-real-output-lightly-trimmed). When a
+`geocode_place("La Jolla Cove")` call came back empty, the model retried with the simpler
+"La Jolla" on its own. When a question only asks about waves, it never calls the species tool (the
+evaluation checks for exactly this). And when someone claimed they saw a clownfish at La Jolla, it
+searched the taxonomy, checked whether the species actually occurs there, refuted the claim with
+evidence, and suggested the garibaldi instead.
 
-**Litmus test:** replace the LLM with a lookup table and the branching, verification, and synthesis
-all disappear — so it's genuinely agentic, not a pipeline.
+The simplest way to put it: if you swapped the model out for a lookup table, all of that branching,
+verification, and synthesis would vanish. So it really is agentic, not a fixed pipeline.
 
 ## 4. How I evaluated it
 
-[`eval/run_eval.py`](eval/run_eval.py) defines "good" as three *executable* dimensions and tests
-9 structured cases against the real agent:
+[`eval/run_eval.py`](eval/run_eval.py) defines what "good" means as three things I can actually
+test, and it runs nine structured cases against the real agent. The first is agentic correctness,
+which checks the tool-call trace to confirm the right tools fire for each kind of question,
+including a negative case where a conditions-only question must not call the species tool. The
+second is grounded answers, where relative dates have to resolve to real calendar dates, the
+verdict comes first, and measurements appear in both metric and imperial. The third is honesty at
+the edges, where an out-of-range identification has to be challenged and an off-topic request has
+to be declined without spending any tool calls.
 
-- **Agentic correctness** — asserts on the **tool-call trace** that the right tools fire per
-  question type, *including a negative case* (a conditions-only question must NOT call the species tool).
-- **Grounded answers** — relative dates resolve to real calendar dates, verdict-first format, dual units.
-- **Honesty at the edges** — an out-of-range ID is challenged; off-topic is declined with zero tool calls.
-
-**Result: 9/9.** An earlier run scored **7/8**; the documented failure (verdict not first) drove
-prompt v2. Run history and the kept failure are in [`eval/RESULTS.md`](eval/RESULTS.md). There are
-also 14 `pytest` integration tests over the data layer, MCP server, and API.
+The suite passes nine out of nine. An earlier run scored seven out of eight, and that documented
+failure (the verdict wasn't coming first) is what drove the move to prompt v2. The run history and
+the kept failure are in [`eval/RESULTS.md`](eval/RESULTS.md). On top of that there are 14 `pytest`
+integration tests covering the data layer, the MCP server, and the API.
 
 ## 5. What changed from draft feedback
 
-Instructor draft feedback (full mapping in [BUILD_LOG.md](BUILD_LOG.md#draft--final-instructor-feedback)):
-the MCP server, agent loop, prompt log, and grounding were validated; the action items were
-**finish the build log** and **write the full README, with a complete example showing the full
-tool chain.**
+The full mapping is in [BUILD_LOG.md](BUILD_LOG.md#draft--final-instructor-feedback). The draft
+feedback validated the MCP server, the agent loop, the prompt log, and the grounding, and it
+flagged two things to finish: the build log, and a full README that includes a complete example
+showing the whole tool chain.
 
-- Both the build log and the full README had just been completed; the feedback drove one concrete
-  improvement — I added a **second worked example** (an identification with verification) so the
-  README now demonstrates **all 7 tools** end-to-end, not just the planning flow.
-- Self-driven iteration also happened throughout: prompt **v1 → v2** (7/8 → 8/8, verdict-first +
-  bounded geocode retries) and **v3** (photo ID), plus fixes for a date-grounding bug and a
-  reference-photo mismatch (see BUILD_LOG).
+I had actually just finished both the build log and the README when that feedback arrived, so the
+useful thing it pushed me to do was add a second worked example. The README now walks through an
+identification with verification as well as the planning flow, and between the two examples all
+seven tools are shown end to end. Plenty of iteration happened on my own along the way too: the
+system prompt went from v1 to v2 (seven out of eight to eight out of eight, after I made the
+verdict come first and capped the geocode retries) and then to v3 for photo identification, and I
+fixed a date-grounding bug and a reference-photo mismatch (both written up in the build log).
 
 ## 6. What breaks, and what I'd fix with more time
 
-**Known limitations / failure modes:**
+A few honest limitations and failure modes:
 
-- **iNaturalist has no strict marine filter**, so coastal `get_species_nearby` results can include
-  the occasional terrestrial taxon (e.g. a land snail). The agent is told to sanity-check, but it's
-  imperfect.
-- **Tides are US-only** (NOAA). For non-US coasts the app says tide data is unavailable rather than
-  guessing — correct, but a coverage gap.
-- **Sparse-data regions** yield thin species lists; quality tracks how well-studied a coast is.
-- **Photo ID accuracy** depends on the model's vision + the candidate it reasons to; a poor photo
-  can still mislead it. There are eval cases for text ID but not yet for image ID.
-- **The rate limiter is in-memory** (single Render instance) and resets on restart — a deterrent,
-  not a hard boundary. The real cost ceiling is the API-key spend limit (see security audit).
-- **Prompt injection** can coax off-topic output (bounded by rate limits + the key's spend cap).
+- iNaturalist has no strict marine filter, so a coastal `get_species_nearby` query can occasionally
+  return a land animal like a garden snail. I tell the agent to sanity-check this, but it isn't
+  perfect.
+- Tides come from NOAA, which only covers US coasts. Outside the US the app says tide data isn't
+  available rather than guessing, which is correct but still a coverage gap.
+- In regions that aren't well studied, the species lists are thin, so quality tracks how much data
+  exists for a given coast.
+- Photo identification depends on both the model's vision and the candidate it reasons toward, so a
+  poor photo can still throw it off. I have evaluation cases for text identification but not yet for
+  image identification.
+- The rate limiter is in-memory on a single Render instance, so it resets on restart. It's a
+  deterrent rather than a hard boundary; the real cost ceiling is the spend limit on the API key
+  (covered in the security audit).
+- Prompt injection can still coax some off-topic output, though the rate limits and the key's spend
+  cap keep the blast radius small.
 
-**What I'd do with more time:**
+What I'd do with more time:
 
-- A real marine filter for sightings (cross-check WoRMS `isMarine` / OBIS occurrence) to remove
-  terrestrial noise.
-- **Caching** of geocode/taxonomy/photo lookups to cut latency and be kinder to the free upstream APIs.
-- **Streaming** responses for faster perceived speed on multi-tool turns.
-- Image-ID **eval cases** with labeled photos to measure vision accuracy, not just text ID.
-- Full-resolution / multiple user photos via Firebase Storage; distributed rate limiting (Redis)
-  if it ever ran multi-instance.
+- Add a proper marine filter for sightings, cross-checking the WoRMS `isMarine` flag or OBIS
+  occurrence data, to clear out the terrestrial noise.
+- Cache the geocode, taxonomy, and photo lookups to cut latency and go easier on the free upstream
+  APIs.
+- Stream responses so multi-tool turns feel faster.
+- Build image-identification evaluation cases with labeled photos so I can measure vision accuracy,
+  not just text accuracy.
+- Support full-resolution and multiple user photos via Firebase Storage, and move to distributed
+  rate limiting (Redis) if it ever ran on more than one instance.
