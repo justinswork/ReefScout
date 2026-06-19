@@ -33,6 +33,8 @@ from app.agent import ReefScoutAgent  # noqa: E402
 
 logger = logging.getLogger("reefscout")
 
+APP_VERSION = "0.3.0"  # bump on release; surfaced by /health to confirm what's deployed
+
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 agent: ReefScoutAgent | None = None
@@ -54,7 +56,7 @@ async def lifespan(app: FastAPI):
         agent = None
 
 
-app = FastAPI(title="ReefScout", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="ReefScout", version=APP_VERSION, lifespan=lifespan)
 
 
 # --- Abuse mitigation: in-memory rate limiting ---------------------------------------
@@ -134,7 +136,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "agent": "live" if agent is not None else "demo"}
+    return {"status": "ok", "version": APP_VERSION, "agent": "live" if agent is not None else "demo"}
 
 
 def _derive_group(classification: dict) -> str:
